@@ -1,0 +1,1399 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Расчёт простоя вагонов, платы за пользование и оборота на путях необщего пользования, проверка счёта и приложение-расчёт к возражениям. Считает в браузере, без установки и без интернета.">
+<title>CARBID · Калькулятор простоя вагонов</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+
+  :root {
+    --bg:        #0d141e;
+    --bg-2:      #0a1018;
+    --card:      #141f2d;
+    --card-2:    #111925;
+    --edge:      #1f2c3d;
+    --edge-2:    #2a3a50;
+    --track:     #1a293b;
+    --txt:       #f2f5fa;
+    --txt-2:     #b1c0d1;
+    --txt-3:     #7f8fa3;
+
+    --acc:       #c0e36a;
+    --acc-dim:   #a3c650;
+    --acc-soft:  #26362b;
+    --acc-ink:   #d3ef8b;
+    --ok:        #4ade9d;
+    --ok-soft:   #16302a;
+    --warn:      #ffb84d;
+    --warn-soft: #33280f;
+    --crit:      #ff7a6b;
+    --crit-soft: #331b1a;
+
+    --f: "Segoe UI", system-ui, Tahoma, sans-serif;
+    --f-mono: Consolas, "Courier New", monospace;
+
+    --pad: clamp(16px, 3.4vw, 40px);
+    --r: 14px;
+    --r-sm: 10px;
+  }
+
+  body {
+    margin: 0; background: var(--bg); color: var(--txt);
+    font-family: var(--f); font-size: 16px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 var(--pad); }
+
+  /* ── Верхняя панель ── */
+  .topbar { background: var(--bg-2); border-bottom: 1px solid var(--edge); }
+  .topbar__in {
+    max-width: 1180px; margin: 0 auto; padding: 15px var(--pad);
+    display: flex; flex-wrap: wrap; gap: 14px 26px; align-items: center; justify-content: space-between;
+  }
+  .logo { display: flex; align-items: baseline; gap: 11px; }
+  .logo__mark { font-style: normal; font-weight: 800; font-size: 15px; width: 26px; height: 26px; border-radius: 7px; background: var(--acc); color: #0d141e; display: inline-grid; place-items: center; align-self: center; }
+  .logo b { font-weight: 800; font-size: 18px; letter-spacing: -.03em; color: var(--txt); }
+  .logo span { font-size: 13px; color: var(--txt-3); }
+  .tabs { display: flex; gap: 7px; flex-wrap: wrap; }
+  .tabs button {
+    font-family: var(--f); font-size: 14px; font-weight: 600; cursor: pointer;
+    background: var(--card); color: var(--txt-2); border: 1px solid var(--edge);
+    border-radius: 100px; padding: 9px 17px; transition: color .15s, background .15s, border-color .15s;
+  }
+  .tabs button:hover { color: var(--txt); border-color: var(--edge-2); }
+  .tabs button[aria-selected="true"] { background: var(--acc); color: #0b0e12; border-color: var(--acc); }
+  .tabs button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+
+  /* ── Шапка экрана ── */
+  .board { padding: clamp(26px, 4.5vw, 48px) 0 clamp(20px, 3vw, 30px); }
+  .kicker {
+    font-size: 12.5px; font-weight: 600; letter-spacing: .04em; color: var(--acc-ink);
+    margin: 0 0 14px; text-transform: none;
+  }
+  h1 {
+    font-weight: 800; font-size: clamp(27px, 4.6vw, 46px); line-height: 1.06;
+    letter-spacing: -.035em; margin: 0 0 13px; max-width: 17ch; text-wrap: balance;
+  }
+  .sub { margin: 0; max-width: 56ch; color: var(--txt-2); font-size: clamp(14.5px, 1.5vw, 16.5px); }
+
+  /* ── Ввод ── */
+  .quick { display: grid; gap: 12px; margin-top: clamp(22px, 3.5vw, 34px); }
+  .quick--2 { grid-template-columns: minmax(0,1fr) minmax(0,1fr) minmax(210px, .8fr); }
+  .quick--5 { grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); }
+  .quick--5 .qcell { padding: 13px 14px 14px; }
+  .quick--5 .qcell input { font-size: 13.5px; }
+  .qcell {
+    background: var(--card); border: 1px solid var(--edge); border-radius: var(--r);
+    padding: 15px 17px 16px; min-width: 0;
+  }
+  .qcell label { display: block; font-size: 12.5px; color: var(--txt-2); margin-bottom: 9px; }
+  .qcell input {
+    width: 100%; background: transparent; border: 0; padding: 0; color: var(--txt);
+    font-family: var(--f); font-weight: 600; font-size: clamp(14px, 1.6vw, 17px);
+    letter-spacing: -.01em; color-scheme: dark;
+  }
+  .qcell input:focus { outline: none; }
+  .qcell:focus-within { border-color: var(--acc); }
+  .qresult {
+    background: var(--card); border: 1px solid var(--acc-soft); border-radius: var(--r);
+    padding: 14px 20px 16px; display: flex; flex-direction: column; justify-content: center; align-items: flex-end;
+  }
+  .qresult .cap { font-size: 12.5px; color: var(--txt-2); margin-bottom: 4px; }
+  .money {
+    font-weight: 800; font-variant-numeric: tabular-nums;
+    font-size: clamp(30px, 5vw, 46px); line-height: 1.02; letter-spacing: -.045em; color: var(--acc);
+  }
+  .money small { font-size: .4em; margin-left: 5px; letter-spacing: -.01em; font-weight: 600; color: var(--txt-2); }
+
+  .facts { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 9px; }
+  .fact {
+    font-size: 13px; color: var(--txt-2); background: var(--card);
+    border: 1px solid var(--edge); border-radius: 100px; padding: 6px 14px; white-space: nowrap;
+  }
+  .fact b { color: var(--txt); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .fact--warn { background: var(--warn-soft); border-color: #4a3a17; }
+  .fact--warn b { color: var(--warn); }
+  .fact--crit { background: var(--crit-soft); border-color: #4d2723; }
+  .fact--crit b { color: var(--crit); }
+  .fact--own { background: var(--acc-soft); border-color: #303a6b; }
+  .fact--own b { color: var(--acc-ink); }
+
+  /* ── Полоса этапов ── */
+  .stagebar {
+    margin-top: 20px; display: flex; gap: 3px; height: 42px;
+    border-radius: var(--r-sm); overflow: hidden; background: var(--track);
+  }
+  .seg { display: flex; align-items: center; justify-content: center; min-width: 0; border-radius: 6px; transition: flex-grow .3s ease; }
+  .seg span { font-size: 12px; font-weight: 700; padding: 0 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .seg--own   { background: var(--acc);     color: #0b0e12; }
+  .seg--own2  { background: var(--acc-dim); color: #0b0e12; }
+  .seg--other { background: #39424f;        color: #c3ccd8; }
+  .seg--other2{ background: #2a313c;        color: #97a2b0; }
+
+  .legend { margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(232px, 1fr)); gap: 10px 22px; }
+  .leg { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--txt-2); }
+  .leg i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .leg b { font-weight: 700; color: var(--txt); margin-left: auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .leg em {
+    font-style: normal; font-size: 10.5px; font-weight: 700; color: var(--acc-ink);
+    background: var(--acc-soft); border-radius: 5px; padding: 2px 7px; letter-spacing: .02em;
+  }
+
+  /* Кольцо */
+  .ringwrap {
+    margin-top: 18px; background: var(--card); border: 1px solid var(--edge); border-radius: var(--r);
+    padding: 20px; display: flex; gap: 26px; align-items: center; flex-wrap: wrap;
+  }
+  .ringwrap svg { display: block; flex: none; }
+  .ringtext { min-width: 0; }
+  .ringtext h3 { margin: 0 0 6px; font-size: 17px; font-weight: 800; letter-spacing: -.025em; }
+  .ringtext p { margin: 0; color: var(--txt-2); font-size: 14.5px; max-width: 46ch; }
+
+  /* ── Настройки строкой ── */
+  .knobs {
+    margin-top: 20px; padding: 16px 18px; background: var(--card-2);
+    border: 1px solid var(--edge); border-radius: var(--r);
+    font-size: 14.5px; color: var(--txt-2); line-height: 2.3;
+  }
+  .knobs .k { color: var(--txt); }
+  .knobs input, .knobs select {
+    font-family: var(--f); font-weight: 600; font-size: 14px; color: var(--acc-ink);
+    background: var(--bg); border: 1px solid var(--edge-2); border-radius: var(--r-sm);
+    padding: 5px 10px; color-scheme: dark;
+  }
+  .knobs input { width: 66px; text-align: right; font-variant-numeric: tabular-nums; }
+  .knobs select { color: var(--txt); }
+  .knobs input:focus-visible, .knobs select:focus-visible { outline: 2px solid var(--acc); outline-offset: 1px; }
+  .knobs .prog { display: inline-flex; gap: 6px; align-items: center; }
+  #flatBox { display: inline-block; }
+
+  .privacy { margin-top: 16px; display: inline-flex; gap: 10px; align-items: center; font-size: 13.5px; color: var(--txt-3); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; }
+
+  /* ── Секции ── */
+  section { margin-top: clamp(36px, 5.5vw, 62px); }
+  .head { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; margin-bottom: 18px; }
+  h2 { font-weight: 800; font-size: clamp(20px, 2.5vw, 28px); letter-spacing: -.03em; margin: 0; text-wrap: balance; }
+  .head p { margin: 0; color: var(--txt-3); font-size: 14.5px; }
+
+  /* ── Плитки итогов ── */
+  .totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(166px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .tot { background: var(--card); border: 1px solid var(--edge); border-radius: var(--r); padding: 16px 18px 17px; }
+  .tot__k { font-size: 12.5px; color: var(--txt-2); }
+  .tot__v { font-weight: 800; font-variant-numeric: tabular-nums; font-size: 26px; letter-spacing: -.04em; margin-top: 5px; line-height: 1.1; }
+  .tot__v span { font-weight: 600; font-size: 13px; color: var(--txt-2); margin-left: 3px; letter-spacing: -.01em; }
+  .tot__trk { height: 5px; border-radius: 100px; background: var(--track); margin-top: 12px; overflow: hidden; }
+  .tot__trk i { display: block; height: 100%; border-radius: 100px; background: var(--acc); transition: width .3s ease; }
+  .tot--pay { border-color: var(--acc-soft); }
+  .tot--pay .tot__v { color: var(--acc); }
+  .tot--pay .tot__trk i { background: var(--ok); }
+  .tot--flag .tot__v { color: var(--crit); }
+  .tot--flag .tot__trk i { background: var(--crit); }
+  .tot--warn .tot__trk i { background: var(--warn); }
+
+  /* ── Таблица ── */
+  .sheet { overflow-x: auto; background: var(--card); border: 1px solid var(--edge); border-radius: var(--r); }
+  table { border-collapse: collapse; width: 100%; }
+  .sheet--wide table { min-width: 1060px; }
+  .sheet--slim table { min-width: 850px; }
+  thead th {
+    font-size: 12.5px; font-weight: 600; color: var(--txt-2); text-align: left;
+    padding: 14px 13px 12px; border-bottom: 1px solid var(--edge); white-space: nowrap;
+  }
+  thead th.num, tbody td.num, tfoot td.num { text-align: right; }
+  tbody td { padding: 6px 13px; border-bottom: 1px solid #1b212a; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody td.num { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; font-size: 14.5px; }
+  tbody input {
+    width: 100%; font-family: var(--f); font-size: 14px; color: var(--txt);
+    background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 7px 8px;
+  }
+  tbody input:hover { border-color: var(--edge-2); }
+  tbody input:focus { outline: none; border-color: var(--acc); background: var(--bg); }
+  td.stripe { padding: 0; width: 3px; }
+  .st-ok td.stripe { background: var(--ok); }
+  .st-warn td.stripe { background: var(--warn); }
+  .st-crit td.stripe { background: var(--crit); }
+  .st-empty td.stripe { background: var(--edge-2); }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 4px 11px; border-radius: 100px; white-space: nowrap; }
+  .tag--ok { background: var(--ok-soft); color: var(--ok); }
+  .tag--warn { background: var(--warn-soft); color: var(--warn); }
+  .tag--crit { background: var(--crit-soft); color: var(--crit); }
+  .tag--none { background: var(--card-2); color: var(--txt-3); }
+  .over { color: var(--warn); }
+  .over--crit { color: var(--crit); }
+  .own { color: var(--acc-ink); }
+  .kill { border: 0; background: transparent; color: var(--txt-3); cursor: pointer; font-size: 18px; line-height: 1; padding: 6px 9px; border-radius: 8px; }
+  .kill:hover { color: var(--crit); background: var(--crit-soft); }
+  tfoot td {
+    padding: 14px 13px; border-top: 1px solid var(--edge); background: var(--card-2);
+    font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 800; letter-spacing: -.02em;
+  }
+  tfoot .lbl { font-weight: 600; font-size: 13.5px; color: var(--txt-2); letter-spacing: 0; }
+
+  /* ── Кнопки ── */
+  .bar { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 14px; }
+  button.act {
+    font-family: var(--f); font-size: 14.5px; font-weight: 600; padding: 11px 19px;
+    border-radius: 100px; cursor: pointer; background: var(--card); color: var(--txt);
+    border: 1px solid var(--edge-2); transition: border-color .15s, background .15s, color .15s;
+  }
+  button.act:hover { border-color: var(--acc); color: var(--acc-ink); }
+  button.act--primary { background: var(--acc); color: #0b0e12; border-color: var(--acc); }
+  button.act--primary:hover { background: var(--acc-dim); border-color: var(--acc-dim); color: #0b0e12; }
+  button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+
+  .paste { margin-top: 16px; background: var(--card); border: 1px solid var(--edge); border-radius: var(--r); padding: 20px; }
+  .paste p { font-size: 14px; color: var(--txt-2); margin: 0 0 11px; }
+  .paste textarea {
+    width: 100%; font-family: var(--f-mono); font-size: 13px; min-height: 108px; resize: vertical;
+    background: var(--bg); color: var(--txt); border: 1px solid var(--edge-2); border-radius: var(--r-sm); padding: 13px;
+  }
+  code { font-family: var(--f-mono); font-size: .86em; background: var(--bg); border: 1px solid var(--edge); padding: 2px 7px; border-radius: 6px; }
+  .note { font-size: 13.5px; color: var(--txt-3); margin: 13px 0 0; }
+
+  /* ── Карточки текста ── */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(262px, 1fr)); gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--edge); border-radius: var(--r); padding: 22px 22px 24px; }
+  .card h3 { font-weight: 800; font-size: 16.5px; letter-spacing: -.025em; margin: 0 0 10px; }
+  .card p { margin: 0 0 10px; font-size: 15px; color: var(--txt-2); }
+  .card p:last-child { margin-bottom: 0; }
+  .card ul { margin: 0; padding-left: 18px; font-size: 15px; color: var(--txt-2); }
+  .card li { margin-bottom: 6px; }
+  .card--flag h3::before, .card--own h3::before {
+    content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 3px; margin-right: 10px; vertical-align: middle;
+  }
+  .card--flag h3::before { background: var(--crit); }
+  .card--own h3::before { background: var(--acc); }
+  .card--flag { border-color: #2e2530; }
+  .card--own { border-color: var(--acc-soft); }
+
+  /* ── Конструктор документа ── */
+  .form {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(228px, 1fr)); gap: 14px;
+    background: var(--card); border: 1px solid var(--edge); border-radius: var(--r); padding: 20px;
+  }
+  .form label { display: block; font-size: 12.5px; color: var(--txt-2); margin-bottom: 7px; }
+  .form input {
+    width: 100%; font-family: var(--f); font-size: 14.5px; color: var(--txt);
+    background: var(--bg); border: 1px solid var(--edge-2); border-radius: var(--r-sm); padding: 9px 12px;
+  }
+  .form input:focus-visible { outline: 2px solid var(--acc); outline-offset: 1px; }
+  .doc textarea {
+    width: 100%; min-height: 380px; margin-top: 14px;
+    font-family: var(--f-mono); font-size: 12.5px; line-height: 1.62;
+    background: var(--card-2); color: var(--txt); border: 1px solid var(--edge);
+    border-radius: var(--r); padding: 20px; resize: vertical;
+    white-space: pre; overflow-wrap: normal; overflow-x: auto;
+  }
+  .warnbox {
+    margin-top: 18px; background: var(--warn-soft); border: 1px solid #4a3a17; border-radius: var(--r);
+    padding: 15px 18px; font-size: 14.5px; color: #e4cfa6; max-width: 76ch;
+  }
+  .readonly { color: var(--txt-2) !important; }
+  .docprint { display: none; }
+
+  /* ── Финальный блок ── */
+  .cta {
+    margin-top: clamp(40px, 6vw, 70px); background: var(--card); border: 1px solid var(--acc-soft);
+    border-radius: var(--r); padding: clamp(26px, 4vw, 44px);
+    display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 26px 40px; align-items: center;
+  }
+  .cta h2 { max-width: 18ch; }
+  .cta p { color: var(--txt-2); margin: 12px 0 0; font-size: 15.5px; max-width: 46ch; }
+  .cta .who { display: flex; flex-direction: column; gap: 11px; }
+  .cta .who div { font-size: 14.5px; color: var(--txt-2); padding-left: 16px; border-left: 2px solid var(--acc); }
+  .contact {
+    display: inline-block; margin-top: 20px; font-size: 15px; font-weight: 700;
+    color: #0b0e12; background: var(--acc); padding: 12px 22px; border-radius: 100px; text-decoration: none;
+  }
+  .contact:hover { background: var(--acc-dim); }
+  .contact:focus-visible { outline: 2px solid var(--txt); outline-offset: 2px; }
+
+  footer { margin: 38px 0 0; padding: 22px 0 64px; border-top: 1px solid var(--edge); font-size: 13px; color: var(--txt-3); max-width: 86ch; }
+
+  @media (max-width: 820px) {
+    .quick--2 { grid-template-columns: 1fr 1fr; }
+    .quick--2 .qresult { grid-column: 1 / -1; align-items: flex-start; }
+    .cta { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 540px) {
+    .quick--2, .quick--5 { grid-template-columns: 1fr; }
+    .seg span { display: none; }
+    .ringwrap { justify-content: center; }
+  }
+  @media print {
+    body { background: #fff; color: #000; }
+    .topbar, .bar, .paste, .knobs, .privacy, .cta, .kill, .form, .warnbox, .stagebar, .ringwrap { display: none !important; }
+    .doc textarea { display: none; }
+    .docprint { display: block; font-family: var(--f-mono); font-size: 10.5px; line-height: 1.45; white-space: pre; margin: 0; color: #000; }
+    .card, .tot, .sheet, .qcell, .qresult { background: #fff; border-color: #bbb; }
+    .money, .tot__v, .tot--pay .tot__v { color: #000; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar__in">
+    <div class="logo"><i class="logo__mark">C</i><b>CARBID</b><span>Вагоны · калькулятор простоя</span></div>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tabDemur" aria-selected="true" aria-controls="panelDemur">Простой и плата</button>
+      <button role="tab" id="tabTurn" aria-selected="false" aria-controls="panelTurn">Оборот вагона</button>
+      <button role="tab" id="tabClaim" aria-selected="false" aria-controls="panelClaim">Счёт и претензия</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ПРОСТОЙ И ПЛАТА ══════════ -->
+<div id="panelDemur" role="tabpanel" aria-labelledby="tabDemur">
+  <div class="board">
+    <div class="wrap">
+      <p class="kicker">Плата за пользование вагонами</p>
+      <h1>Вагон, который стоит, — стоит денег</h1>
+      <p class="sub">Введите время подачи и уборки — увидите, во сколько обошёлся один заход: часы нахождения, сверхнормативное время и плату за пользование.</p>
+
+      <div class="quick quick--2">
+        <div class="qcell">
+          <label for="qa">Подача</label>
+          <input type="datetime-local" id="qa" value="2026-09-05T08:15">
+        </div>
+        <div class="qcell">
+          <label for="qb">Уборка</label>
+          <input type="datetime-local" id="qb" value="2026-09-06T11:20">
+        </div>
+        <div class="qresult">
+          <div class="cap">Плата за заход</div>
+          <div class="money" id="qMoney">0<small>₽</small></div>
+        </div>
+      </div>
+
+      <div class="facts" id="qFacts"></div>
+
+      <div class="knobs">
+        Норматив на грузовую операцию <input type="number" id="norm" value="4" min="0" step="0.5" inputmode="decimal"> <span class="k">ч</span>,
+        исключаемое время <input type="number" id="excl" value="0" min="0" step="0.5" inputmode="decimal"> <span class="k">ч</span>.
+        Плата начисляется
+        <select id="mode">
+          <option value="all">за всё время нахождения</option>
+          <option value="over">только за сверхнормативное</option>
+        </select>
+        по ставке
+        <select id="scale">
+          <option value="flat">единой</option>
+          <option value="prog">прогрессивной</option>
+        </select>
+        <span id="flatBox"><input type="number" id="rate" value="120" min="0" step="1" inputmode="decimal"> <span class="k">₽ за вагоно-час</span></span>
+        <span id="progBox" class="prog" hidden>
+          <input type="number" id="r1" value="90" min="0" step="1" title="до 12 часов">
+          <input type="number" id="r2" value="150" min="0" step="1" title="от 12 до 24 часов">
+          <input type="number" id="r3" value="230" min="0" step="1" title="свыше 24 часов">
+          <span class="k">₽/ч — до 12, 12–24, свыше суток</span>
+        </span>
+      </div>
+
+      <div class="privacy"><span class="dot"></span> Считается прямо здесь, в вашем браузере. Номера вагонов и времена никуда не отправляются.</div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section>
+      <div class="head">
+        <h2>Весь список сразу</h2>
+        <p>Вставьте выгрузку из Excel — посчитает по всем заходам</p>
+      </div>
+
+      <div class="totals">
+        <div class="tot"><div class="tot__k">Вагонов</div><div class="tot__v" id="sCount">0</div></div>
+        <div class="tot"><div class="tot__k">Вагоно-часов</div><div class="tot__v" id="sHours">0</div></div>
+        <div class="tot"><div class="tot__k">Средний простой</div><div class="tot__v" id="sAvg">0</div><div class="tot__trk"><i id="trkAvg" style="width:0%"></i></div></div>
+        <div class="tot tot--warn"><div class="tot__k">Сверх норматива</div><div class="tot__v" id="sOver">0</div><div class="tot__trk"><i id="trkOver" style="width:0%"></i></div></div>
+        <div class="tot tot--flag"><div class="tot__k">Требуют проверки</div><div class="tot__v" id="sFlag">0</div><div class="tot__trk"><i id="trkFlag" style="width:0%"></i></div></div>
+        <div class="tot tot--pay"><div class="tot__k">Плата всего</div><div class="tot__v" id="sPay">0</div></div>
+      </div>
+
+      <div class="sheet sheet--slim">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:3px"></th>
+              <th style="min-width:112px">№ вагона</th>
+              <th style="min-width:180px">Подача</th>
+              <th style="min-width:180px">Уборка</th>
+              <th class="num">Нахождение</th>
+              <th class="num">Сверх нормы</th>
+              <th class="num">Плата, ₽</th>
+              <th>Статус</th>
+              <th style="width:36px"></th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+          <tfoot>
+            <tr>
+              <td class="stripe"></td>
+              <td class="lbl" colspan="3">Итого</td>
+              <td class="num" id="tHours">—</td>
+              <td class="num" id="tOver">—</td>
+              <td class="num" id="tPay">—</td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="bar">
+        <button class="act act--primary" id="btnPaste">Вставить из Excel</button>
+        <button class="act" id="btnAdd">Добавить вагон</button>
+        <button class="act" id="btnCsv">Выгрузить CSV</button>
+        <button class="act" id="btnPrint">Печать</button>
+        <button class="act" id="btnClear">Очистить</button>
+      </div>
+
+      <p class="note" id="sampleNote">Загружен пример из трёх заходов — чтобы было видно, как считает. «Очистить» — и вводите свои.</p>
+
+      <div class="paste" id="pasteBox" hidden>
+        <p>Скопируйте из Excel три столбца — номер вагона, подача, уборка — и вставьте сюда. Даты понимает и как <code>05.09.2026 14:30</code>, и как <code>2026-09-05 14:30</code>.</p>
+        <textarea id="pasteArea" placeholder="61234567&#9;05.09.2026 08:15&#9;05.09.2026 13:40&#10;58891234&#9;05.09.2026 09:00&#9;06.09.2026 11:20"></textarea>
+        <div class="bar">
+          <button class="act act--primary" id="btnPasteGo">Разобрать</button>
+          <button class="act" id="btnPasteCancel">Отмена</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="head"><h2>Как это считается</h2><p>Без сюрпризов в формулах</p></div>
+      <div class="cards">
+        <div class="card">
+          <h3>Время нахождения</h3>
+          <p>Разница между уборкой и подачей, в часах с сотыми. Берётся по памяткам приёмосдатчика формы ГУ-45 — по тем же данным, что ложатся в ведомость подачи и уборки формы ГУ-46.</p>
+          <p>Исключаемое время вычитается из каждого захода до сравнения с нормативом: технологические перерывы и время по вине перевозчика, если это оговорено договором.</p>
+        </div>
+        <div class="card">
+          <h3>Плата за пользование</h3>
+          <p>Начисляется либо за всё время нахождения, либо только за сверхнормативное — зависит от вашего договора на эксплуатацию пути.</p>
+          <p>Прогрессивный режим делит время на интервалы и каждый час считает по ставке своего интервала — так устроено в Тарифном руководстве № 2, где ставка растёт с продолжительностью.</p>
+        </div>
+        <div class="card card--flag">
+          <h3>Что помечается красным</h3>
+          <p>Не превышение норматива, а то, что похоже на ошибку в данных:</p>
+          <ul>
+            <li>уборка раньше подачи — обратный ход времени;</li>
+            <li>нахождение дольше суток — либо реальный затор, либо незакрытая отметка;</li>
+            <li>пустая или нечитаемая дата.</li>
+          </ul>
+          <p>Превышение норматива красным не красится: на большинстве участков оно случается почти всегда, и если красить его — тревога перестаёт что-либо значить.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ══════════ ОБОРОТ ВАГОНА ══════════ -->
+<div id="panelTurn" role="tabpanel" aria-labelledby="tabTurn" hidden>
+  <div class="board">
+    <div class="wrap">
+      <p class="kicker">Оборот на подъездном пути</p>
+      <h1>Где именно вагон теряет часы</h1>
+      <p class="sub">Полный оборот — это четыре разных этапа, и отвечаете вы только за два. Введите отметки по одному заходу и увидите, сколько времени действительно ваше.</p>
+
+      <div class="quick quick--5">
+        <div class="qcell"><label for="t1">Приём</label><input type="datetime-local" id="t1" value="2026-09-05T06:40"></div>
+        <div class="qcell"><label for="t2">Подача</label><input type="datetime-local" id="t2" value="2026-09-05T08:15"></div>
+        <div class="qcell"><label for="t3">Готовность</label><input type="datetime-local" id="t3" value="2026-09-05T14:30"></div>
+        <div class="qcell"><label for="t4">Уборка</label><input type="datetime-local" id="t4" value="2026-09-06T09:10"></div>
+        <div class="qcell"><label for="t5">Сдача</label><input type="datetime-local" id="t5" value="2026-09-06T11:20"></div>
+      </div>
+
+      <div class="stagebar" id="stageBar"></div>
+      <div class="legend" id="stageLegend"></div>
+
+      <div class="ringwrap">
+        <svg width="136" height="136" viewBox="0 0 150 150" role="img" aria-labelledby="ringLbl">
+          <title id="ringLbl">Доля управляемого времени в обороте</title>
+          <circle cx="75" cy="75" r="60" fill="none" stroke="#232a35" stroke-width="15"></circle>
+          <circle id="ringArc" cx="75" cy="75" r="60" fill="none" stroke="#c0e36a" stroke-width="15"
+                  stroke-linecap="round" stroke-dasharray="0 377" transform="rotate(-90 75 75)"></circle>
+          <text id="ringPct" x="75" y="72" text-anchor="middle" fill="#eceff4" font-family="Manrope, sans-serif" font-size="34" font-weight="800">0%</text>
+          <text id="ringSub" x="75" y="96" text-anchor="middle" fill="#8d97a5" font-family="Manrope, sans-serif" font-size="11">—</text>
+        </svg>
+        <div class="ringtext">
+          <h3>Столько оборота зависит от участка</h3>
+          <p>Приём → подача и готовность → уборка. Остальное — грузовая операция и работа перевозчика: на них участок не влияет, и спрашивать за них несправедливо.</p>
+        </div>
+      </div>
+
+      <div class="facts" id="turnFacts" style="margin-top:18px"></div>
+
+      <div class="privacy"><span class="dot"></span> Всё считается у вас в браузере — ни одна отметка не уходит наружу.</div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section>
+      <div class="head">
+        <h2>Оборот по всем заходам</h2>
+        <p>Шесть столбцов из Excel: вагон, приём, подача, готовность, уборка, сдача</p>
+      </div>
+
+      <div class="totals">
+        <div class="tot"><div class="tot__k">Заходов</div><div class="tot__v" id="uCount">0</div></div>
+        <div class="tot"><div class="tot__k">Средний оборот</div><div class="tot__v" id="uAvg">0</div></div>
+        <div class="tot"><div class="tot__k">Ожидание подачи</div><div class="tot__v" id="uWait1">0</div><div class="tot__trk"><i id="trkW1" style="width:0%"></i></div></div>
+        <div class="tot"><div class="tot__k">Ожидание уборки</div><div class="tot__v" id="uWait2">0</div><div class="tot__trk"><i id="trkW2" style="width:0%"></i></div></div>
+        <div class="tot tot--flag"><div class="tot__k">Требуют проверки</div><div class="tot__v" id="uFlag">0</div></div>
+        <div class="tot tot--pay"><div class="tot__k">Ваше время</div><div class="tot__v" id="uOwn">0</div><div class="tot__trk"><i id="trkOwn" style="width:0%"></i></div></div>
+      </div>
+
+      <div class="sheet sheet--wide">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:3px"></th>
+              <th style="min-width:108px">№ вагона</th>
+              <th style="min-width:172px">Приём</th>
+              <th style="min-width:172px">Подача</th>
+              <th style="min-width:172px">Готовность</th>
+              <th style="min-width:172px">Уборка</th>
+              <th style="min-width:172px">Сдача</th>
+              <th class="num">Оборот</th>
+              <th class="num">Ваше время</th>
+              <th>Статус</th>
+              <th style="width:36px"></th>
+            </tr>
+          </thead>
+          <tbody id="uRows"></tbody>
+          <tfoot>
+            <tr>
+              <td class="stripe"></td>
+              <td class="lbl" colspan="6">Итого</td>
+              <td class="num" id="uTotal">—</td>
+              <td class="num" id="uTotalOwn">—</td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="bar">
+        <button class="act act--primary" id="uBtnPaste">Вставить из Excel</button>
+        <button class="act" id="uBtnAdd">Добавить вагон</button>
+        <button class="act" id="uBtnCsv">Выгрузить CSV</button>
+        <button class="act" id="uBtnPrint">Печать</button>
+        <button class="act" id="uBtnClear">Очистить</button>
+      </div>
+
+      <p class="note" id="uSampleNote">Загружен пример из трёх заходов. «Очистить» — и вводите свои.</p>
+
+      <div class="paste" id="uPasteBox" hidden>
+        <p>Шесть столбцов по порядку: номер вагона, приём, подача, готовность, уборка, сдача. Пустые ячейки допустимы — этап просто не посчитается.</p>
+        <textarea id="uPasteArea" placeholder="61234567&#9;05.09.2026 06:40&#9;05.09.2026 08:15&#9;05.09.2026 14:30&#9;06.09.2026 09:10&#9;06.09.2026 11:20"></textarea>
+        <div class="bar">
+          <button class="act act--primary" id="uBtnPasteGo">Разобрать</button>
+          <button class="act" id="uBtnPasteCancel">Отмена</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="head"><h2>Почему считать надо так</h2><p>Четыре этапа, и только два ваши</p></div>
+      <div class="cards">
+        <div class="card card--own">
+          <h3>Управляемое время</h3>
+          <p>Приём → подача и готовность → уборка. Это единственные два отрезка, на которые влияет участок: как быстро подали на фронт и как быстро убрали после окончания работ.</p>
+          <p>Смены и людей имеет смысл оценивать только по ним. Всё остальное — чужая ответственность, и премия за это несправедлива в обе стороны.</p>
+        </div>
+        <div class="card">
+          <h3>Чужое время</h3>
+          <p>Подача → готовность — это грузовая операция: грузополучатель, погрузчики, склад. Уборка → сдача зависит от перевозчика и наличия ниток.</p>
+          <p>Их надо видеть отдельно, чтобы в разговоре с грузополучателем или станцией был не спор, а цифра.</p>
+        </div>
+        <div class="card card--flag">
+          <h3>Что помечается красным</h3>
+          <p>Отметки, которые не могут быть правдой: этап с обратным ходом времени, оборот длиннее десяти суток, отдельный этап длиннее суток.</p>
+          <p>Чаще всего это не затор, а незакрытая отметка в журнале — уехавший вагон продолжает числиться на путях и портит всю статистику месяца.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ══════════ СЧЁТ И ПРЕТЕНЗИЯ ══════════ -->
+<div id="panelClaim" role="tabpanel" aria-labelledby="tabClaim" hidden>
+  <div class="board">
+    <div class="wrap">
+      <p class="kicker">Проверка счёта за простой</p>
+      <h1>Вам выставили счёт. Сойдётся ли он</h1>
+      <p class="sub">Подставьте сумму из счёта — сравним с расчётом по вашим отметкам с вкладки «Простой и плата». Ниже соберётся приложение-расчёт, которое прикладывают к возражениям или к претензии.</p>
+
+      <div class="quick quick--2">
+        <div class="qcell">
+          <label for="cInvoice">Предъявлено по счёту, ₽</label>
+          <input type="number" id="cInvoice" value="48500" min="0" step="100" inputmode="decimal">
+        </div>
+        <div class="qcell">
+          <label for="cCalc">По вашему расчёту, ₽</label>
+          <input type="text" id="cCalc" value="0" readonly class="readonly">
+        </div>
+        <div class="qresult">
+          <div class="cap">Расхождение</div>
+          <div class="money" id="cDiff">0<small>₽</small></div>
+        </div>
+      </div>
+
+      <div class="facts" id="cFacts"></div>
+
+      <div class="privacy"><span class="dot"></span> Расчёт берётся из ведомости на вкладке «Простой и плата». Внесите туда свои заходы — сумма здесь пересчитается.</div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section>
+      <div class="head">
+        <h2>Приложение-расчёт к возражениям</h2>
+        <p>Заполните реквизиты — документ соберётся сам</p>
+      </div>
+
+      <div class="form">
+        <div><label for="fOwner">Владелец пути / грузополучатель</label><input type="text" id="fOwner" placeholder="ООО «…»"></div>
+        <div><label for="fCarrier">Кому адресовано</label><input type="text" id="fCarrier" placeholder="ОАО «РЖД», ТЦФТО …"></div>
+        <div><label for="fContract">Договор №</label><input type="text" id="fContract" placeholder="12/34-Э"></div>
+        <div><label for="fContractDate">Дата договора</label><input type="text" id="fContractDate" placeholder="01.02.2024"></div>
+        <div><label for="fStation">Станция примыкания</label><input type="text" id="fStation" placeholder="…"></div>
+        <div><label for="fPeriod">Период</label><input type="text" id="fPeriod" placeholder="01.08.2026 – 31.08.2026"></div>
+        <div><label for="fInvoiceNo">Счёт №</label><input type="text" id="fInvoiceNo" placeholder="…"></div>
+        <div><label for="fInvoiceDate">Дата счёта</label><input type="text" id="fInvoiceDate" placeholder="05.09.2026"></div>
+      </div>
+
+      <div class="bar">
+        <button class="act act--primary" id="cBtnMake">Собрать документ</button>
+        <button class="act" id="cBtnCopy">Скопировать</button>
+        <button class="act" id="cBtnPrint">Печать</button>
+      </div>
+
+      <div class="doc">
+        <textarea id="cDoc" readonly spellcheck="false"></textarea>
+        <pre id="cDocPrint" class="docprint"></pre>
+      </div>
+
+      <div class="warnbox">
+        Это расчётное приложение, а не юридический документ и не консультация. Правовую позицию, ссылки на нормы и сроки проверяйте с юристом — здесь только арифметика по вашим же отметкам и то, что из неё следует.
+      </div>
+    </section>
+
+    <section>
+      <div class="head"><h2>Что проверить, прежде чем платить</h2><p>Четыре места, где счёт обычно расходится с фактом</p></div>
+      <div class="cards">
+        <div class="card card--flag">
+          <h3>Времена не совпадают с памятками</h3>
+          <p>Сверьте каждое время подачи и уборки в счёте с памятками приёмосдатчика формы ГУ-45 и ведомостью формы ГУ-46. Расхождение в час на вагон при десятках заходов даёт заметную сумму.</p>
+          <p>Особенно часто разъезжается время уборки: фактическое и внесённое в систему.</p>
+        </div>
+        <div class="card card--flag">
+          <h3>Не вычтено исключаемое время</h3>
+          <p>Если задержка произошла по причинам, зависящим от перевозчика, это должно быть зафиксировано актом общей формы ГУ-23 — и такое время из расчёта исключается.</p>
+          <p>Нет акта — нет и основания исключить. Поэтому акт составляется в момент задержки, а не когда пришёл счёт.</p>
+        </div>
+        <div class="card card--flag">
+          <h3>Неверный режим начисления</h3>
+          <p>Плата за пользование вагонами по статье 39 Устава железнодорожного транспорта начисляется за время нахождения вагонов у вас либо за время ожидания подачи или приёма по зависящим от вас причинам.</p>
+          <p>А вот считается она за всё время или только за сверхнормативное — определяет ваш договор. Проверьте, по какому варианту выставлен счёт.</p>
+        </div>
+        <div class="card card--flag">
+          <h3>Задвоенные заходы</h3>
+          <p>Незакрытая отметка о сдаче держит уехавший вагон в расчёте бесконечно. Один и тот же вагон может попасть в счёт дважды: как незакрытый прошлый заход и как новый.</p>
+          <p>Ищется сверкой списка вагонов из счёта со снимком состояния путей на дату.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="head"><h2>Чем подтверждается время</h2><p>Документы, на которые опирается расчёт</p></div>
+      <div class="cards">
+        <div class="card">
+          <h3>ГУ-45 — памятка приёмосдатчика</h3>
+          <p>Фиксирует подачу и уборку вагонов. Первичный документ, из которого берутся времена: всё остальное считается уже по нему.</p>
+        </div>
+        <div class="card">
+          <h3>ГУ-46 — ведомость подачи и уборки</h3>
+          <p>Сводный документ за период, на основании которого начисляется плата. Формируется из памяток; расхождение между ними — повод для возражений.</p>
+        </div>
+        <div class="card">
+          <h3>ГУ-23 — акт общей формы</h3>
+          <p>Фиксирует задержку и её обстоятельства: ожидание подачи, невозможность приёма, причины, зависящие от перевозчика. Единственный способ подтвердить исключаемое время.</p>
+        </div>
+        <div class="card">
+          <h3>ДО-6 — учёт простоя на станции</h3>
+          <p>Станционная отчётность по простою грузовых вагонов. Пригодится, когда спор идёт о времени нахождения на путях общего пользования.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="cta">
+    <div>
+      <h2>Пришла претензия за простой?</h2>
+      <p>Программа CARBID · Вагоны сверяет реестр претензии оператора или экспедитора с вашими памятками ГУ-45, ведомостями ГУ-46 и актами ГУ-23 по каждому вагону и собирает ответ с приложением-расчётом. Ранний доступ — половина цены первым десяти предприятиям.</p>
+      <a class="contact" href="https://carbid-soft.github.io/vagony/">https://carbid-soft.github.io/vagony/</a>
+    </div>
+    <div class="who">
+      <div>Сверка претензии по каждому вагону</div>
+      <div>Исключает время по актам ГУ-23</div>
+      <div>Ответ на претензию и приложение-расчёт</div>
+      <div>Без 1С, без ЭТРАН-интеграции, без интернета</div>
+    </div>
+  </div>
+
+  <footer>
+    Расчёты справочные. Ставки платы за пользование вагонами, норматив на грузовую операцию и перечень исключаемого времени берите из своего договора на эксплуатацию пути необщего пользования и действующего тарифа — сюда они подставляются вручную. Подача и уборка оформляются памятками приёмосдатчика формы ГУ-45 и ведомостью подачи и уборки вагонов формы ГУ-46, задержки — актом общей формы ГУ-23; учёт простоя грузовых вагонов на станциях ведётся по форме ДО-6. Страница не является юридической консультацией.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function $(id) { return document.getElementById(id); }
+  function numOf(id) { var v = parseFloat($(id).value); return isFinite(v) ? v : 0; }
+  function fmt(x, d) {
+    if (!isFinite(x)) return "—";
+    return x.toLocaleString("ru-RU", { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+  function hoursBetween(a, b) {
+    if (!a || !b) return NaN;
+    var t1 = new Date(a).getTime(), t2 = new Date(b).getTime();
+    if (!isFinite(t1) || !isFinite(t2)) return NaN;
+    return (t2 - t1) / 3600000;
+  }
+  function pad(v) { v = String(v); return v.length < 2 ? "0" + v : v; }
+  function parseDT(s) {
+    s = (s || "").trim().replace(/\s+/g, " ");
+    if (!s) return "";
+    var m = s.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})(?:[ T](\d{1,2})[:.](\d{2}))?/);
+    if (m) {
+      var y = m[3].length === 2 ? "20" + m[3] : m[3];
+      return y + "-" + pad(m[2]) + "-" + pad(m[1]) + "T" + pad(m[4] || "0") + ":" + (m[5] || "00");
+    }
+    m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2})[:.](\d{2}))?/);
+    if (m) return m[1] + "-" + pad(m[2]) + "-" + pad(m[3]) + "T" + pad(m[4] || "0") + ":" + (m[5] || "00");
+    return "";
+  }
+  function cell(text, cls) {
+    var td = document.createElement("td");
+    if (cls) td.className = cls;
+    td.textContent = text;
+    return td;
+  }
+  function inputCell(type, value, placeholder, onchange) {
+    var td = document.createElement("td");
+    var inp = document.createElement("input");
+    inp.type = type; inp.value = value || ""; inp.placeholder = placeholder;
+    inp.oninput = function () { onchange(inp.value); };
+    td.appendChild(inp);
+    return td;
+  }
+  function killCell(label, fn) {
+    var td = document.createElement("td");
+    var b = document.createElement("button");
+    b.className = "kill"; b.type = "button"; b.textContent = "×";
+    b.title = "Удалить строку"; b.setAttribute("aria-label", label);
+    b.onclick = fn;
+    td.appendChild(b);
+    return td;
+  }
+  function chip(box, html, kind) {
+    var el = document.createElement("span");
+    el.className = "fact" + (kind ? " fact--" + kind : "");
+    el.innerHTML = html;
+    box.appendChild(el);
+  }
+  function csvOut(name, lines) {
+    var csv = lines.join("\r\n");
+    var framed = true;
+    try { framed = window.self !== window.top; } catch (e) { framed = true; }
+    if (framed) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(csv).then(function () {
+          alert("Таблица скопирована в буфер обмена — вставьте её в Excel.\n\nВ скачанном файле эта кнопка сохраняет CSV на диск.");
+        }, function () { alert(csv); });
+      } else { alert(csv); }
+      return;
+    }
+    var blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+
+  /* ═════ Вкладки ═════ */
+  var tabs = [
+    { btn: $("tabDemur"), panel: $("panelDemur") },
+    { btn: $("tabTurn"),  panel: $("panelTurn") },
+    { btn: $("tabClaim"), panel: $("panelClaim") }
+  ];
+  tabs.forEach(function (t) {
+    t.btn.onclick = function () {
+      tabs.forEach(function (o) {
+        var on = o === t;
+        o.btn.setAttribute("aria-selected", on ? "true" : "false");
+        o.panel.hidden = !on;
+      });
+      window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+    };
+  });
+
+  /* ═════════════ ПРОСТОЙ И ПЛАТА ═════════════ */
+  var state = [
+    { n: "61234567", a: "2026-09-05T08:15", b: "2026-09-05T13:40" },
+    { n: "58891234", a: "2026-09-05T09:00", b: "2026-09-06T11:20" },
+    { n: "62057713", a: "2026-09-05T14:05", b: "2026-09-05T17:35" }
+  ];
+  var isSample = true;
+
+  function progressive(hours, r1, r2, r3) {
+    var h = Math.max(0, hours), pay = 0;
+    var b1 = Math.min(h, 12); pay += b1 * r1; h -= b1;
+    var b2 = Math.min(h, 12); pay += b2 * r2; h -= b2;
+    return pay + Math.max(0, h) * r3;
+  }
+
+  function calcDemur(a, b) {
+    var out = { hours: NaN, over: NaN, pay: NaN, status: "empty", note: "Не заполнено" };
+    if (!a || !b) return out;
+    var raw = hoursBetween(a, b);
+    if (!isFinite(raw)) { out.status = "crit"; out.note = "Дата не читается"; return out; }
+    if (raw <= 0) { out.status = "crit"; out.note = "Уборка раньше подачи"; return out; }
+
+    var hours = Math.max(0, raw - numOf("excl"));
+    var over = Math.max(0, hours - numOf("norm"));
+    var onlyOver = $("mode").value === "over";
+    var pay;
+    if ($("scale").value === "prog") {
+      var full = progressive(hours, numOf("r1"), numOf("r2"), numOf("r3"));
+      pay = onlyOver ? full - progressive(hours - over, numOf("r1"), numOf("r2"), numOf("r3")) : full;
+    } else {
+      pay = (onlyOver ? over : hours) * numOf("rate");
+    }
+    out.hours = hours; out.over = over; out.pay = pay;
+    if (raw > 24) { out.status = "crit"; out.note = "Дольше суток"; }
+    else if (over > 0) { out.status = "warn"; out.note = "Сверх норматива"; }
+    else { out.status = "ok"; out.note = "В нормативе"; }
+    return out;
+  }
+
+  var shown = 0, anim = null;
+  function countTo(target) {
+    var el = $("qMoney");
+    if (anim) cancelAnimationFrame(anim);
+    if (reduce || Math.abs(target - shown) < 1) { shown = target; paintMoney(el, target); return; }
+    var from = shown, t0 = performance.now();
+    (function step(now) {
+      var p = Math.min(1, (now - t0) / 340);
+      shown = from + (target - from) * (1 - Math.pow(1 - p, 3));
+      paintMoney(el, shown);
+      if (p < 1) anim = requestAnimationFrame(step); else { shown = target; paintMoney(el, target); }
+    })(t0);
+  }
+  function paintMoney(el, v) {
+    el.textContent = fmt(Math.round(v), 0);
+    var s = document.createElement("small"); s.textContent = "₽";
+    el.appendChild(s);
+  }
+
+  function renderQuick() {
+    var c = calcDemur($("qa").value, $("qb").value);
+    countTo(isFinite(c.pay) ? c.pay : 0);
+    var box = $("qFacts");
+    box.textContent = "";
+    if (c.status === "empty") { chip(box, "Укажите оба времени", ""); return; }
+    if (!isFinite(c.hours)) { chip(box, "<b>" + c.note + "</b>", "crit"); return; }
+    chip(box, "Нахождение <b>" + fmt(c.hours, 2) + " ч</b>", "");
+    chip(box, c.over > 0 ? "Сверх норматива <b>" + fmt(c.over, 2) + " ч</b>" : "Уложились в норматив", c.over > 0 ? "warn" : "");
+    if (c.status === "crit") chip(box, "<b>" + c.note + "</b>", "crit");
+  }
+
+  function renderDemur() {
+    renderQuick();
+    var tb = $("rows");
+    tb.textContent = "";
+    var tH = 0, tO = 0, tP = 0, nFlag = 0, nC = 0;
+
+    state.forEach(function (r, i) {
+      var c = calcDemur(r.a, r.b);
+      var tr = document.createElement("tr");
+      tr.className = "st-" + (c.status === "empty" ? "empty" : c.status);
+      var s = document.createElement("td"); s.className = "stripe"; tr.appendChild(s);
+      tr.appendChild(inputCell("text", r.n, "№ вагона", function (v) { r.n = v; touch(); }));
+      tr.appendChild(inputCell("datetime-local", r.a, "", function (v) { r.a = v; touch(); renderDemur(); }));
+      tr.appendChild(inputCell("datetime-local", r.b, "", function (v) { r.b = v; touch(); renderDemur(); }));
+      tr.appendChild(cell(isFinite(c.hours) ? fmt(c.hours, 2) + " ч" : "—", "num"));
+      var oc = cell(isFinite(c.over) ? fmt(c.over, 2) + " ч" : "—", "num");
+      if (isFinite(c.over) && c.over > 0) oc.className += c.status === "crit" ? " over over--crit" : " over";
+      tr.appendChild(oc);
+      tr.appendChild(cell(isFinite(c.pay) ? fmt(c.pay, 0) : "—", "num"));
+      var st = document.createElement("td");
+      var tag = document.createElement("span");
+      tag.className = "tag tag--" + (c.status === "empty" ? "none" : c.status);
+      tag.textContent = c.note;
+      st.appendChild(tag); tr.appendChild(st);
+      tr.appendChild(killCell("Удалить строку " + (i + 1), function () { state.splice(i, 1); touch(); renderDemur(); }));
+      tb.appendChild(tr);
+      if (isFinite(c.hours)) { tH += c.hours; tO += c.over; tP += c.pay; nC++; }
+      if (c.status === "crit") nFlag++;
+    });
+
+    $("tHours").textContent = nC ? fmt(tH, 2) + " ч" : "—";
+    $("tOver").textContent  = nC ? fmt(tO, 2) + " ч" : "—";
+    $("tPay").textContent   = nC ? fmt(tP, 0) : "—";
+    $("sCount").textContent = state.length;
+    setTot("sHours", fmt(tH, 1), "ч");
+    setTot("sAvg", nC ? fmt(tH / nC, 1) : "0", "ч");
+    setTot("sOver", fmt(tO, 1), "ч");
+    $("sFlag").textContent = nFlag;
+    setTot("sPay", fmt(tP, 0), "₽");
+    trk("trkAvg", nC ? (tH / nC) / 24 : 0);
+    trk("trkOver", tH > 0 ? tO / tH : 0);
+    trk("trkFlag", state.length ? nFlag / state.length : 0);
+    $("sampleNote").hidden = !isSample;
+    renderClaim();
+  }
+  function touch() { if (isSample) { isSample = false; $("sampleNote").hidden = true; } }
+  function trk(id, share) {
+    var el = $(id);
+    if (!el) return;
+    var pct = isFinite(share) ? Math.max(0, Math.min(1, share)) : 0;
+    el.style.width = (pct * 100).toFixed(1) + "%";
+  }
+
+  function setTot(id, value, unit) {
+    var el = $(id);
+    el.textContent = value;
+    var u = document.createElement("span"); u.textContent = unit;
+    el.appendChild(u);
+  }
+
+  $("btnAdd").onclick = function () {
+    touch(); state.push({ n: "", a: "", b: "" }); renderDemur();
+    var last = $("rows").querySelector("tr:last-child input");
+    if (last) last.focus();
+  };
+  $("btnClear").onclick = function () { state = []; isSample = false; renderDemur(); };
+  $("btnPrint").onclick = function () { window.print(); };
+  $("btnPaste").onclick = function () {
+    var box = $("pasteBox"); box.hidden = !box.hidden;
+    if (!box.hidden) $("pasteArea").focus();
+  };
+  $("btnPasteCancel").onclick = function () { $("pasteBox").hidden = true; };
+  $("btnPasteGo").onclick = function () {
+    var added = [];
+    $("pasteArea").value.split(/\r?\n/).forEach(function (line) {
+      if (!line.trim()) return;
+      var p = line.split(/\t|;|\s{2,}/).map(function (x) { return x.trim(); }).filter(Boolean);
+      if (p.length < 2) return;
+      if (p.length >= 3) added.push({ n: p[0], a: parseDT(p[1]), b: parseDT(p[2]) });
+      else added.push({ n: "", a: parseDT(p[0]), b: parseDT(p[1]) });
+    });
+    added = added.filter(function (r) { return r.a || r.b; });
+    if (!added.length) { alert("Не нашёл ни одной строки. Нужны колонки: номер вагона, подача, уборка."); return; }
+    if (isSample) { state = []; isSample = false; }
+    state = state.concat(added);
+    $("pasteArea").value = ""; $("pasteBox").hidden = true;
+    renderDemur();
+  };
+  $("btnCsv").onclick = function () {
+    var lines = ["№ вагона;Подача;Уборка;Нахождение, ч;Сверх норматива, ч;Плата, ₽;Статус"];
+    state.forEach(function (r) {
+      var c = calcDemur(r.a, r.b);
+      lines.push([
+        r.n || "", (r.a || "").replace("T", " "), (r.b || "").replace("T", " "),
+        isFinite(c.hours) ? c.hours.toFixed(2).replace(".", ",") : "",
+        isFinite(c.over) ? c.over.toFixed(2).replace(".", ",") : "",
+        isFinite(c.pay) ? c.pay.toFixed(0) : "", c.note
+      ].join(";"));
+    });
+    csvOut("простой-вагонов.csv", lines);
+  };
+  $("scale").onchange = function () {
+    var prog = this.value === "prog";
+    $("progBox").hidden = !prog;
+    $("flatBox").hidden = prog;
+    renderDemur();
+  };
+  ["norm", "excl", "mode", "rate", "r1", "r2", "r3", "qa", "qb"].forEach(function (id) {
+    $(id).addEventListener("input", renderDemur);
+    $(id).addEventListener("change", renderDemur);
+  });
+
+  /* ═════════════ ОБОРОТ ВАГОНА ═════════════ */
+  var STAGES = [
+    { key: "wait1", name: "Ожидание подачи",  from: 0, to: 1, own: true,  cls: "seg--own",    color: "#c0e36a" },
+    { key: "load",  name: "Грузовая операция", from: 1, to: 2, own: false, cls: "seg--other",  color: "#39424f" },
+    { key: "wait2", name: "Ожидание уборки",  from: 2, to: 3, own: true,  cls: "seg--own2",   color: "#a3c650" },
+    { key: "hand",  name: "Сдача перевозчику", from: 3, to: 4, own: false, cls: "seg--other2", color: "#2a313c" }
+  ];
+
+  var uState = [
+    { n: "61234567", t: ["2026-09-05T06:40", "2026-09-05T08:15", "2026-09-05T14:30", "2026-09-06T09:10", "2026-09-06T11:20"] },
+    { n: "58891234", t: ["2026-09-05T07:10", "2026-09-05T12:40", "2026-09-05T18:05", "2026-09-05T21:30", "2026-09-06T02:15"] },
+    { n: "62057713", t: ["2026-09-05T13:00", "2026-09-05T14:05", "2026-09-05T17:35", "2026-09-06T16:40", "2026-09-06T18:00"] }
+  ];
+  var uSample = true;
+
+  function calcTurn(times) {
+    var res = { parts: [], total: NaN, own: NaN, status: "empty", note: "Не заполнено" };
+    var any = times.some(Boolean);
+    if (!any) return res;
+
+    var bad = false, total = 0, own = 0, counted = 0;
+    STAGES.forEach(function (s) {
+      var h = hoursBetween(times[s.from], times[s.to]);
+      if (isFinite(h)) {
+        if (h < 0) bad = true;
+        h = Math.max(0, h);
+        total += h; counted++;
+        if (s.own) own += h;
+        if (h > 24) bad = true;
+      }
+      res.parts.push({ stage: s, hours: h });
+    });
+
+    if (!counted) { res.status = "crit"; res.note = "Даты не читаются"; return res; }
+    res.total = total; res.own = own;
+
+    if (bad) { res.status = "crit"; res.note = "Проверить отметки"; }
+    else if (total > 240) { res.status = "crit"; res.note = "Оборот дольше 10 суток"; }
+    else if (counted < 4) { res.status = "warn"; res.note = "Заполнены не все отметки"; }
+    else if (own > total / 2) { res.status = "warn"; res.note = "Больше половины — ваше время"; }
+    else { res.status = "ok"; res.note = "Картина нормальная"; }
+    return res;
+  }
+
+  function renderTurnQuick() {
+    var times = ["t1", "t2", "t3", "t4", "t5"].map(function (id) { return $(id).value; });
+    var r = calcTurn(times);
+    var bar = $("stageBar"), leg = $("stageLegend"), facts = $("turnFacts");
+    bar.textContent = ""; leg.textContent = ""; facts.textContent = "";
+
+    var sum = 0;
+    r.parts.forEach(function (p) { if (isFinite(p.hours)) sum += p.hours; });
+
+    r.parts.forEach(function (p) {
+      if (!isFinite(p.hours) || p.hours <= 0) return;
+      var seg = document.createElement("div");
+      seg.className = "seg " + p.stage.cls;
+      seg.style.flex = p.hours + " 0 0";
+      seg.title = p.stage.name + " — " + fmt(p.hours, 2) + " ч";
+      var sp = document.createElement("span");
+      sp.textContent = sum > 0 && p.hours / sum > 0.13 ? fmt(p.hours, 1) + " ч" : "";
+      seg.appendChild(sp);
+      bar.appendChild(seg);
+
+      var l = document.createElement("div");
+      l.className = "leg";
+      var i = document.createElement("i"); i.style.background = p.stage.color;
+      if (!p.stage.own) i.style.border = "1px solid #4a5464";
+      var nm = document.createElement("span"); nm.textContent = p.stage.name;
+      l.appendChild(i); l.appendChild(nm);
+      if (p.stage.own) { var em = document.createElement("em"); em.textContent = "ВАШЕ"; l.appendChild(em); }
+      var b = document.createElement("b"); b.textContent = fmt(p.hours, 2) + " ч";
+      l.appendChild(b);
+      leg.appendChild(l);
+    });
+
+    var C = 376.99;
+    var share = r.total > 0 ? Math.max(0, Math.min(1, r.own / r.total)) : 0;
+    $("ringArc").setAttribute("stroke-dasharray", (C * share).toFixed(1) + " " + C.toFixed(1));
+    $("ringPct").textContent = Math.round(share * 100) + "%";
+    $("ringSub").textContent = isFinite(r.own) && r.total > 0 ? fmt(r.own, 2) + " из " + fmt(r.total, 2) + " ч" : "—";
+
+    if (r.status === "empty") { chip(facts, "Заполните отметки по заходу", ""); return; }
+    chip(facts, "Полный оборот <b>" + fmt(r.total, 2) + " ч</b>", "");
+    chip(facts, "Ваше время <b>" + fmt(r.own, 2) + " ч</b>", "own");
+    if (r.total > 0) chip(facts, "Доля вашего времени <b>" + fmt(r.own / r.total * 100, 0) + " %</b>", "own");
+    if (r.status === "crit") chip(facts, "<b>" + r.note + "</b>", "crit");
+    else if (r.status === "warn") chip(facts, "<b>" + r.note + "</b>", "warn");
+  }
+
+  var U_HEAD = ["Приём", "Подача", "Готовность", "Уборка", "Сдача"];
+
+  function renderTurn() {
+    renderTurnQuick();
+    var tb = $("uRows");
+    tb.textContent = "";
+    var sumT = 0, sumOwn = 0, sumW1 = 0, sumW2 = 0, nFlag = 0, nC = 0;
+
+    uState.forEach(function (r, i) {
+      var c = calcTurn(r.t);
+      var tr = document.createElement("tr");
+      tr.className = "st-" + (c.status === "empty" ? "empty" : c.status);
+      var s = document.createElement("td"); s.className = "stripe"; tr.appendChild(s);
+      tr.appendChild(inputCell("text", r.n, "№ вагона", function (v) { r.n = v; uTouch(); }));
+      r.t.forEach(function (val, k) {
+        tr.appendChild(inputCell("datetime-local", val, "", function (v) { r.t[k] = v; uTouch(); renderTurn(); }));
+      });
+      tr.appendChild(cell(isFinite(c.total) ? fmt(c.total, 2) + " ч" : "—", "num"));
+      var oc = cell(isFinite(c.own) ? fmt(c.own, 2) + " ч" : "—", "num");
+      if (isFinite(c.own) && c.own > 0) oc.className += " own";
+      tr.appendChild(oc);
+      var st = document.createElement("td");
+      var tag = document.createElement("span");
+      tag.className = "tag tag--" + (c.status === "empty" ? "none" : c.status);
+      tag.textContent = c.note;
+      st.appendChild(tag); tr.appendChild(st);
+      tr.appendChild(killCell("Удалить строку " + (i + 1), function () { uState.splice(i, 1); uTouch(); renderTurn(); }));
+      tb.appendChild(tr);
+
+      if (isFinite(c.total)) {
+        sumT += c.total; sumOwn += c.own; nC++;
+        var w1 = c.parts[0] && isFinite(c.parts[0].hours) ? Math.max(0, c.parts[0].hours) : 0;
+        var w2 = c.parts[2] && isFinite(c.parts[2].hours) ? Math.max(0, c.parts[2].hours) : 0;
+        sumW1 += w1; sumW2 += w2;
+      }
+      if (c.status === "crit") nFlag++;
+    });
+
+    $("uTotal").textContent = nC ? fmt(sumT, 2) + " ч" : "—";
+    $("uTotalOwn").textContent = nC ? fmt(sumOwn, 2) + " ч" : "—";
+    $("uCount").textContent = uState.length;
+    setTot("uAvg", nC ? fmt(sumT / nC, 1) : "0", "ч");
+    setTot("uWait1", fmt(sumW1, 1), "ч");
+    setTot("uWait2", fmt(sumW2, 1), "ч");
+    $("uFlag").textContent = nFlag;
+    setTot("uOwn", nC && sumT > 0 ? fmt(sumOwn / sumT * 100, 0) : "0", "%");
+    trk("trkW1", sumT > 0 ? sumW1 / sumT : 0);
+    trk("trkW2", sumT > 0 ? sumW2 / sumT : 0);
+    trk("trkOwn", sumT > 0 ? sumOwn / sumT : 0);
+    $("uSampleNote").hidden = !uSample;
+  }
+  function uTouch() { if (uSample) { uSample = false; $("uSampleNote").hidden = true; } }
+
+  $("uBtnAdd").onclick = function () {
+    uTouch(); uState.push({ n: "", t: ["", "", "", "", ""] }); renderTurn();
+    var last = $("uRows").querySelector("tr:last-child input");
+    if (last) last.focus();
+  };
+  $("uBtnClear").onclick = function () { uState = []; uSample = false; renderTurn(); };
+  $("uBtnPrint").onclick = function () { window.print(); };
+  $("uBtnPaste").onclick = function () {
+    var box = $("uPasteBox"); box.hidden = !box.hidden;
+    if (!box.hidden) $("uPasteArea").focus();
+  };
+  $("uBtnPasteCancel").onclick = function () { $("uPasteBox").hidden = true; };
+  $("uBtnPasteGo").onclick = function () {
+    var added = [];
+    $("uPasteArea").value.split(/\r?\n/).forEach(function (line) {
+      if (!line.trim()) return;
+      var p = line.split(/\t|;|\s{2,}/).map(function (x) { return x.trim(); });
+      if (p.length < 3) return;
+      var n = p[0], rest = p.slice(1, 6);
+      while (rest.length < 5) rest.push("");
+      added.push({ n: n, t: rest.map(parseDT) });
+    });
+    added = added.filter(function (r) { return r.t.some(Boolean); });
+    if (!added.length) { alert("Не нашёл ни одной строки. Нужны шесть столбцов: вагон, приём, подача, готовность, уборка, сдача."); return; }
+    if (uSample) { uState = []; uSample = false; }
+    uState = uState.concat(added);
+    $("uPasteArea").value = ""; $("uPasteBox").hidden = true;
+    renderTurn();
+  };
+  $("uBtnCsv").onclick = function () {
+    var lines = ["№ вагона;" + U_HEAD.join(";") + ";Оборот, ч;Ваше время, ч;Ожидание подачи, ч;Ожидание уборки, ч;Статус"];
+    uState.forEach(function (r) {
+      var c = calcTurn(r.t);
+      var w1 = c.parts[0] && isFinite(c.parts[0].hours) ? c.parts[0].hours : NaN;
+      var w2 = c.parts[2] && isFinite(c.parts[2].hours) ? c.parts[2].hours : NaN;
+      lines.push([r.n || ""]
+        .concat(r.t.map(function (x) { return (x || "").replace("T", " "); }))
+        .concat([
+          isFinite(c.total) ? c.total.toFixed(2).replace(".", ",") : "",
+          isFinite(c.own) ? c.own.toFixed(2).replace(".", ",") : "",
+          isFinite(w1) ? w1.toFixed(2).replace(".", ",") : "",
+          isFinite(w2) ? w2.toFixed(2).replace(".", ",") : "",
+          c.note
+        ]).join(";"));
+    });
+    csvOut("оборот-вагонов.csv", lines);
+  };
+  ["t1", "t2", "t3", "t4", "t5"].forEach(function (id) {
+    $(id).addEventListener("input", renderTurn);
+    $(id).addEventListener("change", renderTurn);
+  });
+
+  /* ═════════════ СЧЁТ И ПРЕТЕНЗИЯ ═════════════ */
+  var cShown = 0, cAnim = null;
+
+  function claimTotals() {
+    var t = { count: 0, hours: 0, over: 0, pay: 0 };
+    state.forEach(function (r) {
+      var c = calcDemur(r.a, r.b);
+      if (isFinite(c.hours)) { t.count++; t.hours += c.hours; t.over += c.over; t.pay += c.pay; }
+    });
+    return t;
+  }
+
+  function paintDiff(el, v) {
+    el.textContent = fmt(Math.round(v), 0);
+    var s = document.createElement("small"); s.textContent = "₽";
+    el.appendChild(s);
+  }
+  function countDiff(target) {
+    var el = $("cDiff");
+    if (!el) return;
+    if (cAnim) cancelAnimationFrame(cAnim);
+    if (reduce || Math.abs(target - cShown) < 1) { cShown = target; paintDiff(el, target); return; }
+    var from = cShown, t0 = performance.now();
+    (function step(now) {
+      var p = Math.min(1, (now - t0) / 340);
+      cShown = from + (target - from) * (1 - Math.pow(1 - p, 3));
+      paintDiff(el, cShown);
+      if (p < 1) cAnim = requestAnimationFrame(step); else { cShown = target; paintDiff(el, target); }
+    })(t0);
+  }
+
+  function renderClaim() {
+    if (!$("cCalc")) return;
+    var t = claimTotals();
+    var invoice = parseFloat($("cInvoice").value);
+    if (!isFinite(invoice)) invoice = 0;
+    var diff = invoice - t.pay;
+
+    $("cCalc").value = fmt(Math.round(t.pay), 0) + " ₽";
+    countDiff(diff);
+
+    var box = $("cFacts");
+    box.textContent = "";
+    if (!t.count) { chip(box, "<b>Ведомость пуста</b> — заполните её на вкладке «Простой и плата»", "warn"); return; }
+    chip(box, "Заходов в расчёте <b>" + t.count + "</b>", "");
+    chip(box, "Вагоно-часов <b>" + fmt(t.hours, 2) + "</b>", "");
+    chip(box, "Сверх норматива <b>" + fmt(t.over, 2) + " ч</b>", t.over > 0 ? "warn" : "");
+    if (Math.round(diff) > 0) chip(box, "Счёт выше расчёта на <b>" + fmt(Math.round(diff), 0) + " ₽</b>", "crit");
+    else if (Math.round(diff) < 0) chip(box, "Счёт ниже расчёта на <b>" + fmt(Math.abs(Math.round(diff)), 0) + " ₽</b>", "");
+    else chip(box, "<b>Счёт сходится с расчётом</b>", "");
+  }
+
+  function padR(s, n) { s = String(s); while (s.length < n) s += " "; return s; }
+  function padL(s, n) { s = String(s); while (s.length < n) s = " " + s; return s; }
+  function human(v) {
+    if (!v) return "—";
+    var m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    return m ? m[3] + "." + m[2] + "." + m[1] + " " + m[4] + ":" + m[5] : String(v);
+  }
+
+  function buildDoc() {
+    var t = claimTotals();
+    var invoice = parseFloat($("cInvoice").value);
+    if (!isFinite(invoice)) invoice = 0;
+    var v = function (id, dflt) { var x = $(id).value.trim(); return x || dflt; };
+    var mode = $("mode").value === "over" ? "только за время сверх норматива" : "за всё время нахождения";
+    var rate = $("scale").value === "prog"
+      ? "прогрессивная — " + numOf("r1") + " / " + numOf("r2") + " / " + numOf("r3") +
+        " ₽ за вагоно-час (до 12 ч, 12–24 ч, свыше 24 ч)"
+      : numOf("rate") + " ₽ за вагоно-час";
+
+    var rule = new Array(97).join("-");
+    var L = [];
+    L.push("ПРИЛОЖЕНИЕ");
+    L.push("Расчёт времени нахождения вагонов и платы за пользование");
+    L.push("");
+    L.push("к возражениям на счёт № " + v("fInvoiceNo", "____") + " от " + v("fInvoiceDate", "__.__.____"));
+    L.push("");
+    L.push("Владелец пути необщего пользования: " + v("fOwner", "________________________"));
+    L.push("Адресат: " + v("fCarrier", "________________________"));
+    L.push("Договор на эксплуатацию железнодорожного пути необщего пользования");
+    L.push("№ " + v("fContract", "____") + " от " + v("fContractDate", "__.__.____"));
+    L.push("Станция примыкания: " + v("fStation", "____________"));
+    L.push("Расчётный период: " + v("fPeriod", "____________"));
+    L.push("");
+    L.push("ПАРАМЕТРЫ РАСЧЁТА");
+    L.push("Норматив на грузовую операцию: " + numOf("norm") + " ч");
+    L.push("Исключаемое время: " + numOf("excl") + " ч на вагон");
+    L.push("Плата начисляется: " + mode);
+    L.push("Ставка: " + rate);
+    L.push("");
+    L.push("РАСЧЁТ ПО ЗАХОДАМ");
+    L.push(rule);
+    L.push(padR("№", 4) + padR("Вагон", 12) + padR("Подача", 18) + padR("Уборка", 18) +
+           padL("Нахожд., ч", 12) + padL("Сверх, ч", 11) + padL("Плата, ₽", 12));
+    L.push(rule);
+    var i = 0;
+    state.forEach(function (r) {
+      var c = calcDemur(r.a, r.b);
+      i++;
+      L.push(padR(i, 4) + padR(r.n || "—", 12) + padR(human(r.a), 18) + padR(human(r.b), 18) +
+             padL(isFinite(c.hours) ? c.hours.toFixed(2) : "—", 12) +
+             padL(isFinite(c.over) ? c.over.toFixed(2) : "—", 11) +
+             padL(isFinite(c.pay) ? Math.round(c.pay) : "—", 12));
+    });
+    L.push(rule);
+    L.push(padR("ИТОГО, заходов " + t.count, 52) + padL(t.hours.toFixed(2), 12) +
+           padL(t.over.toFixed(2), 11) + padL(Math.round(t.pay), 12));
+    L.push("");
+    var d = invoice - t.pay;
+    L.push("Плата по настоящему расчёту: " + Math.round(t.pay) + " ₽");
+    L.push("Предъявлено по счёту: " + Math.round(invoice) + " ₽");
+    L.push("Расхождение: " + (d > 0 ? "+" : "") + Math.round(d) + " ₽" +
+           (Math.round(d) > 0 ? " — счёт превышает расчёт" : Math.round(d) < 0 ? " — счёт ниже расчёта" : " — расхождений нет"));
+    L.push("");
+    L.push("Расчёт произведён по данным памяток приёмосдатчика формы ГУ-45");
+    L.push("и ведомости подачи и уборки вагонов формы ГУ-46.");
+    L.push("Время задержки по причинам, зависящим от перевозчика, подлежит исключению");
+    L.push("из расчёта при наличии акта общей формы ГУ-23.");
+    L.push("");
+    L.push("Приложения: копии памяток ГУ-45 за период, ведомость ГУ-46,");
+    L.push("акты общей формы ГУ-23 (при наличии).");
+    L.push("");
+    L.push("");
+    L.push("_________________________ / _________________________");
+    L.push("        подпись                      расшифровка");
+
+    var text = L.join("\n");
+    $("cDoc").value = text;
+    $("cDocPrint").textContent = text;
+  }
+
+  $("cBtnMake").onclick = buildDoc;
+  $("cBtnPrint").onclick = function () { buildDoc(); window.print(); };
+  $("cBtnCopy").onclick = function () {
+    buildDoc();
+    var ta = $("cDoc");
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ta.value).then(
+        function () { alert("Документ скопирован в буфер обмена."); },
+        function () { ta.removeAttribute("readonly"); ta.select(); ta.setAttribute("readonly", "readonly"); }
+      );
+    } else {
+      ta.removeAttribute("readonly"); ta.select(); ta.setAttribute("readonly", "readonly");
+    }
+  };
+  $("cInvoice").addEventListener("input", renderClaim);
+  ["fOwner", "fCarrier", "fContract", "fContractDate", "fStation", "fPeriod", "fInvoiceNo", "fInvoiceDate"]
+    .forEach(function (id) { $(id).addEventListener("input", buildDoc); });
+
+  renderDemur();
+  renderTurn();
+  buildDoc();
+})();
+</script>
+<!-- Яндекс Метрика -->
+<script>
+(function (m, e, t, r, i, k, a) {
+  m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments); };
+  m[i].l = 1 * new Date();
+  k = e.createElement(t); a = e.getElementsByTagName(t)[0];
+  k.async = 1; k.src = r; a.parentNode.insertBefore(k, a);
+})(window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+ym(113673204, "init", { clickmap: true, trackLinks: true, accurateTrackBounce: true });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/113673204" style="position:absolute; left:-9999px;" alt=""></div></noscript>
+</body>
+</html>

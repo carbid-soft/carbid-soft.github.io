@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CARBID · Пульт продавца — Wildberries, Ozon и Яндекс Маркет в одном окне</title>
+<meta name="description" content="Все кабинеты WB, Ozon и Яндекс Маркета в одном окне: заказы FBS, остатки, продажи за 30 дней, вопросы покупателей, маржа и сторож акций. Версия 1.2 за 4 999 ₽, бесплатная демонстрация для Windows.">
+<meta property="og:title" content="CARBID · Пульт продавца — все кабинеты в одном окне">
+<meta property="og:description" content="Заказы, остатки, продажи, покупатели и сторож акций в одной программе для Windows. Бесплатная демонстрация версии 1.2.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://carbid-soft.github.io/pult/img/guard.png">
+<meta name="theme-color" content="#0d141e">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23c0e36a'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-family='Segoe UI,Arial,sans-serif' font-weight='800' font-size='20' fill='%230d141e'%3EC%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0d141e; --card: #141f2d; --card-2: #192333; --line: #233246;
+    --text: #f2f5fa; --muted: #b1c0d1; --accent: #c0e36a; --accent-2: #d3ef8b;
+    --on-accent: #0d141e; --warn: #f2c14e; --radius: 16px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, -apple-system, Tahoma, sans-serif; font-size: 17px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+  .draft { display: none; background: #5a1d17; color: #ffd9d3; text-align: center; font-size: 14px; padding: 8px 16px; }
+  .draft.on { display: block; }
+
+  header { padding: 22px 0; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: var(--text); text-decoration: none; }
+  .logo-mark { width: 32px; height: 32px; border-radius: 9px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-weight: 800; font-size: 19px; font-style: normal; }
+  .logo small { font-weight: 600; font-size: 13px; color: var(--accent); letter-spacing: .06em; text-transform: uppercase; margin-left: 2px; }
+  .nav { display: flex; gap: 22px; font-size: 15px; }
+  .nav a { color: var(--muted); text-decoration: none; }
+  .nav a:hover { color: var(--text); }
+
+  .hero { padding: 30px 0 40px; }
+  .tag { display: inline-block; font-size: 13px; font-weight: 600; color: var(--accent); background: rgba(192,227,106,.10); border: 1px solid rgba(192,227,106,.28); padding: 5px 12px; border-radius: 999px; margin-bottom: 18px; }
+  h1 { font-size: 46px; line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 18px; font-weight: 800; max-width: 900px; }
+  .lead { color: var(--muted); font-size: 19px; margin: 0 0 28px; max-width: 820px; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: inherit; font-weight: 700; font-size: 16px; padding: 14px 22px; border-radius: 12px; border: 0; cursor: pointer; text-decoration: none; transition: transform .15s ease, background .15s ease; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-main { background: var(--accent); color: var(--on-accent); }
+  .btn-main:hover { background: var(--accent-2); }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  .btn-ghost:hover { border-color: var(--accent); }
+  .fine { font-size: 14px; color: var(--muted); margin-top: 12px; }
+  .shot { display: block; width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 30px 60px -30px rgba(0,0,0,.7); }
+  .hero .shot { margin-top: 36px; }
+  .result { margin-top: 36px; }
+  .result-label { margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+  .result .card b { display: block; font-size: 40px; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 6px; }
+  .result .neg { color: #ff9b8f; }
+  .hero .result + .shot { margin-top: 24px; }
+  .compare { margin: 24px 0 0; padding: 14px 18px; border-left: 3px solid var(--accent); border-radius: 0 12px 12px 0; background: var(--card); color: var(--text); font-size: 16px; }
+
+  section { padding: 56px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: 32px; line-height: 1.2; letter-spacing: -0.015em; margin: 0 0 12px; font-weight: 800; }
+  .sub { color: var(--muted); margin: 0 0 30px; max-width: 760px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+  .card h3 { margin: 0 0 8px; font-size: 19px; }
+  .card p { margin: 0; color: var(--muted); font-size: 16px; }
+  .card ul { margin: 10px 0 0; padding-left: 20px; color: var(--muted); }
+  .card li { margin: 4px 0; }
+  .mp { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 6px; margin-bottom: 12px; }
+  .mp.wb { background: #4a1f4f; color: #f0c4f5; }
+  .mp.oz { background: #1d3157; color: #bcd2ff; }
+  .mp.ym { background: #4d3d12; color: #ffe08a; }
+  .num { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 10px; display: block; }
+  figure { margin: 0; }
+  figcaption { color: var(--muted); font-size: 14px; margin-top: 10px; }
+
+  .price { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; }
+  .price-main { border-color: var(--accent); background: linear-gradient(180deg, rgba(192,227,106,.10), var(--card) 70%); }
+  .price-main b { font-size: 46px; letter-spacing: -0.02em; display: block; line-height: 1.1; margin: 6px 0; }
+
+  details { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; margin-bottom: 10px; }
+  summary { cursor: pointer; font-weight: 700; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; float: right; color: var(--muted); font-weight: 400; }
+  details[open] summary::after { content: "–"; }
+  details p { color: var(--muted); margin: 10px 0 0; }
+
+  footer { border-top: 1px solid var(--line); padding: 30px 0 46px; color: var(--muted); font-size: 14px; }
+  footer p { margin: 6px 0; }
+
+  @media (max-width: 900px) {
+    .grid3, .grid2, .price { grid-template-columns: 1fr; }
+    h1 { font-size: 34px; }
+    .nav { display: none; }
+  }
+  @media (max-width: 520px) {
+    body { font-size: 16px; }
+    .wrap { padding: 0 16px; }
+    h1 { font-size: 29px; }
+    h2 { font-size: 25px; }
+    .btn { width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } }
+</style>
+</head>
+<body>
+
+<div class="draft" id="draft"></div>
+
+<header>
+  <div class="wrap bar">
+    <a class="logo" href="#top"><i class="logo-mark" aria-hidden="true">C</i> CARBID <small>Пульт продавца</small></a>
+    <nav class="nav">
+      <a href="#what">Что делает</a>
+      <a href="#guard">Сторож акций</a>
+      <a href="#features">Возможности</a>
+      <a href="#price">Цена</a>
+      <a href="#faq">Вопросы</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap hero">
+    <span class="tag">Wildberries · Ozon · Яндекс Маркет</span>
+    <h1>Все ваши кабинеты и продажи в одном окне</h1>
+    <p class="lead">Программа для Windows собирает заказы FBS, остатки, продажи за 30 дней, вопросы покупателей и маржу Wildberries, Ozon и Яндекс Маркета. А ещё находит акции ниже вашего порога и исправляет их только по вашей кнопке.</p>
+    <div class="buttons">
+      <a class="btn btn-main js-download" href="#try">Скачать бесплатно</a>
+      <a class="btn btn-ghost js-buy" href="#price">Купить — 4 999 ₽ разово</a>
+    </div>
+    <p class="fine">Бесплатно — демонстрация на вымышленных данных. Свои кабинеты подключаются кодом активации. Ключи API остаются на вашем компьютере.</p>
+    <div class="result">
+      <p class="result-label">Пример: демонстрация на вымышленных данных, порог маржи — 500 ₽ с единицы</p>
+      <div class="grid3">
+        <div class="card"><b>3 из 7</b><p>товаров ниже порога маржи из-за акций и скидок</p></div>
+        <div class="card"><b class="neg">2</b><p>из них — расчётная маржа меньше нуля</p></div>
+        <div class="card"><b class="neg">−102,52 ₽</b><p>с каждой штуки: кейс на Wildberries, скидка продавца 85%, цена 402 ₽</p></div>
+      </div>
+    </div>
+    <img class="shot" src="img/guard.png" width="2160" height="1410" alt="Экран «Сторож»: товары ниже порога маржи из-за акций WB и Ozon и кнопки «Исправить»">
+  </div>
+
+  <section id="what">
+    <div class="wrap">
+      <h2>Что делает Пульт и чего не делает</h2>
+      <p class="sub">Коротко и по пунктам — только то, что проверено.</p>
+      <div class="grid3">
+        <div class="card">
+          <h3>Что делает</h3>
+          <ul>
+            <li>Показывает товары, у которых расчётная маржа после акций и скидок ниже вашего порога.</li>
+            <li>Wildberries: находит раздутую скидку продавца и предлагает наибольшую скидку, при которой маржа не ниже порога.</li>
+            <li>Ozon: находит автодобавление в акции и участие в акциях по цене ниже порога.</li>
+            <li>Яндекс Маркет: находит промо по цене ниже порога.</li>
+            <li>Исправляет только по вашей кнопке, после окна подтверждения со списком изменений. Каждое исправление пишется в журнал.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Чего не делает</h3>
+          <ul>
+            <li>Не меняет цены, остатки, заказы и карточки сам. Из изменений возможны три: скидка WB вниз, выключение автодобавления на Ozon, выход из акции. Без вашей кнопки — ни одного.</li>
+            <li>Не оценивает товары без себестоимости: их маржа неизвестна.</li>
+            <li>Не поднимает базовую цену: если товар ниже порога и без скидки, цену поднимаете сами.</li>
+            <li>Нет FBO и FBW, рекламы и полных финансовых отчётов. Обращения Ozon и возвраты Ozon и Маркета не загружаются. Фонового обновления нет: загрузка идёт по кнопке «Обновить».</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Что нужно ввести</h3>
+          <ul>
+            <li>API-ключ каждого кабинета. Для Ozon ещё Client-Id, для Маркета — businessId и campaignId.</li>
+            <li>Себестоимость товаров — вручную или файлом CSV.</li>
+            <li>Налог, логистику, прочие расходы и порог маржи — для каждого кабинета.</li>
+            <li>Чтобы работала кнопка «Исправить», у ключа нужно право записи цен (WB, Ozon) и управления акциями (Ozon, Маркет). Без него Пульт только показывает проблемы.</li>
+            <li>Код активации — для своих кабинетов. Демонстрация работает без него.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h3>Что проверено на живых данных</h3>
+        <ul>
+          <li>Все 18 разделов WB, Ozon и Маркета загружены на живых кабинетах 04.11.2026, только чтение: заказы, товары, акции, продажи, обращения и баланс.</li>
+          <li>Сторож — на живых кабинетах, только чтение. Кнопки «Исправить» проверены автоматическими тестами на синтетических ответах площадок и в демонстрации.</li>
+          <li>Версия 1.2: 66 автоматических тестов, готовый EXE — 14 проверок на обычной и минимальной ширине окна, независимый QA — PASS.</li>
+          <li>Windows x64, проверено на Windows 11.</li>
+        </ul>
+      </div>
+      <p class="compare"><b>Чем это отличается от бесплатных программ.</b> Бесплатные проекты с открытым кодом для похожих задач, которые мы смотрели, рассчитаны на свой сервер: их ставят через Docker или настраивают среду вручную. Пульт — обычная программа для Windows: распакуйте архив и запустите CARBID.exe — откроется демонстрация. Сервер, Docker и Python не нужны. Windows может спросить подтверждение: <a href="#try">программа не подписана</a>.</p>
+    </div>
+  </section>
+
+  <section id="guard">
+    <div class="wrap">
+      <h2>Сторож акций</h2>
+      <p class="sub">Площадки сами ставят товары в акции и раздувают скидки. Цена падает, комиссия считается от новой цены — и с каждой продажи вы получаете меньше, чем закладывали. Сторож сравнивает цену после акций с вашими расходами и показывает, где маржа ниже порога.</p>
+      <div class="grid3">
+        <div class="card">
+          <span class="mp wb">Wildberries</span>
+          <h3>Раздутая скидка продавца</h3>
+          <p>Автоакции WB поднимают скидку продавца. Сторож предлагает наибольшую скидку, при которой маржа не ниже вашего порога. Базовая цена не меняется.</p>
+        </div>
+        <div class="card">
+          <span class="mp oz">Ozon</span>
+          <h3>Автодобавление в акции</h3>
+          <p>Ozon сам добавляет товары в свои акции. Сторож выключает автодобавление и выводит из акций, где цена ниже порога маржи.</p>
+        </div>
+        <div class="card">
+          <span class="mp ym">Яндекс Маркет</span>
+          <h3>Промо ниже порога</h3>
+          <p>Показывает товары в промо Маркета с маржой ниже порога и выводит их из промо.</p>
+        </div>
+      </div>
+      <p class="fine" style="margin-top:18px">Ничего не меняется без вашей кнопки и окна подтверждения. Каждое исправление записывается в журнал. Обычное обновление данных только читает кабинеты.</p>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <h2>Всё необходимое — в одном окне</h2>
+      <p class="sub">Несколько кабинетов трёх площадок, общая очередь действий и поиск по артикулам, товарам и заказам.</p>
+      <div class="grid2">
+        <figure>
+          <img class="shot" src="img/orders.png" width="2160" height="1410" alt="Экран «Заказы»: очередь FBS по всем кабинетам" loading="lazy">
+          <figcaption>Очередь заказов FBS по всем подключённым кабинетам.</figcaption>
+        </figure>
+        <figure>
+          <img class="shot" src="img/sales.png" width="2160" height="1410" alt="Экран «Продажи»: заказы и начисления за 30 дней" loading="lazy">
+          <figcaption>Заказы, отмены, выручка и доступные начисления за 30 дней.</figcaption>
+        </figure>
+        <figure>
+          <img class="shot" src="img/products.png" width="2160" height="1410" alt="Экран «Товары»: товары и остатки трёх площадок" loading="lazy">
+          <figcaption>Товары, цены и остатки WB, Ozon и Маркета (FBS/FIT).</figcaption>
+        </figure>
+        <figure>
+          <img class="shot" src="img/margin.png" width="2160" height="1410" alt="Экран «Маржа»: расчётная маржа на единицу товара" loading="lazy">
+          <figcaption>Расчётная маржа на единицу: себестоимость, логистика, налог и другие ваши расходы.</figcaption>
+        </figure>
+        <figure>
+          <img class="shot" src="img/customers.png" width="2160" height="1410" alt="Экран «Покупатели»: вопросы и отзывы без ответа" loading="lazy">
+          <figcaption>Вопросы и отзывы WB и Маркета, которые ждут вашего ответа.</figcaption>
+        </figure>
+        <figure>
+          <img class="shot" src="img/overview.png" width="2160" height="1410" alt="Экран «Обзор»: срочные действия и состояние кабинетов" loading="lazy">
+          <figcaption>Единая очередь действий, состояние каждого кабинета, экспорт CSV и PDF, резервные копии.</figcaption>
+        </figure>
+      </div>
+      <p class="fine" style="margin-top:18px">На скриншотах — реальный интерфейс версии 1.2 с демонстрационными данными.</p>
+    </div>
+  </section>
+
+  <section id="try">
+    <div class="wrap">
+      <h2>Попробуйте бесплатно</h2>
+      <p class="sub">Сначала посмотрите программу на демонстрационных данных — без кода, без ключей и без оплаты.</p>
+      <div class="grid3">
+        <div class="card">
+          <span class="num">ШАГ 1</span>
+          <h3>Скачайте и распакуйте</h3>
+          <p>Архив для Windows x64, около 175 МБ. Запустите Install.cmd или CARBID.exe — откроется демонстрация.</p>
+        </div>
+        <div class="card">
+          <span class="num">ШАГ 2</span>
+          <h3>Купите код активации</h3>
+          <p>4 999 ₽ разово на Яндекс Маркете: код активации и инструкция приходят на e-mail.</p>
+        </div>
+        <div class="card">
+          <span class="num">ШАГ 3</span>
+          <h3>Подключите свои кабинеты</h3>
+          <p>Меню «Активация» → введите код, добавьте ключи API своих кабинетов и обновите данные.</p>
+        </div>
+      </div>
+      <div class="buttons" style="margin-top:22px">
+        <a class="btn btn-main js-download" id="download" href="#">Скачать демонстрацию</a>
+      </div>
+      <p class="fine">Программа не подписана коммерческим сертификатом, поэтому Windows может показать «Неизвестный издатель». Нажмите «Подробнее» → «Выполнить в любом случае».</p>
+      <p class="fine">Не получилось поставить — напишите, помогу в переписке: <a href="mailto:carbidproduction@mail.ru?subject=%D0%9F%D1%83%D0%BB%D1%8C%D1%82%3A%20%D0%BD%D0%B5%20%D0%BF%D0%BE%D0%BB%D1%83%D1%87%D0%B8%D0%BB%D0%BE%D1%81%D1%8C%20%D0%BF%D0%BE%D1%81%D1%82%D0%B0%D0%B2%D0%B8%D1%82%D1%8C">carbidproduction@mail.ru</a></p>
+    </div>
+  </section>
+
+  <section id="price">
+    <div class="wrap">
+      <h2>Цена</h2>
+      <div class="price">
+        <div class="card price-main">
+          <h3>CARBID · Пульт продавца</h3>
+          <b>4 999 ₽</b>
+          <ul>
+            <li>Разовая покупка, без подписки.</li>
+            <li>Код активации подходит ко всем версиям 1.x.</li>
+            <li>Windows x64, проверено на Windows 11. Интерфейс на русском.</li>
+          </ul>
+          <div class="buttons" style="margin-top:18px">
+            <a class="btn btn-main js-buy" id="buy" href="https://market.yandex.ru/card/carbid--programma-dlya-kabinetov-marketpleysov-windows/234719475638566912" target="_blank" rel="noopener">Купить на Яндекс Маркете</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Чего в версии 1.2 нет</h3>
+          <ul>
+            <li>FBO и FBW, рекламы и полных финансовых отчётов.</li>
+            <li>Вопросов и отзывов Ozon, возвратов Ozon и Маркета.</li>
+            <li>Фонового обновления и мобильного приложения: данные обновляются по кнопке.</li>
+          </ul>
+          <p style="margin-top:12px">Маржа в программе — расчётная по вашим расходам, а не чистая прибыль по фактическим выплатам. Работа подключений зависит от API площадок.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <h2>Вопросы</h2>
+      <details>
+        <summary>Безопасно ли вводить ключи API?</summary>
+        <p>Ключи вводятся только на вашем компьютере и хранятся зашифрованными средствами Windows для вашей учётной записи. Продавцу программы их отправлять не нужно, программа не передаёт их третьим сторонам. В резервную копию ключи не попадают.</p>
+      </details>
+      <details>
+        <summary>Может ли программа что-то сломать в кабинете?</summary>
+        <p>Обновление только читает данные. Изменять программа может одно — скидку и участие в акциях, и только через сторож, по вашей кнопке и после окна подтверждения. Заказы, остатки и карточки она не трогает.</p>
+      </details>
+      <details>
+        <summary>Нужен ли сервер или подписка?</summary>
+        <p>Нет. Программа работает на вашем компьютере, данные хранятся локально. Интернет нужен только для обновления данных из кабинетов.</p>
+      </details>
+      <details>
+        <summary>Это официальный продукт Wildberries, Ozon или Маркета?</summary>
+        <p>Нет. Названия площадок обозначают совместимость: программа работает через их открытые API.</p>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><b style="color:var(--text)">CARBID · Пульт продавца</b> — из линейки программ CARBID. Почта: <a href="mailto:carbidproduction@mail.ru">carbidproduction@mail.ru</a></p>
+    <p>Бесплатно: <a href="/kalkulyator-marzhi/">калькулятор маржи Wildberries и Ozon</a> — прибыль в акции и наибольшая безопасная скидка. Инструкция: <a href="/avtodobavlenie-akcii-ozon/">как выключить автодобавление в акции Ozon</a>. Инструкция: <a href="/avtoakcii-wb/">где увидеть, что автоакция WB уже снизила цену</a>. Разбор: <a href="/tarif-ozon-1-dekabrya/">Ozon с 1 декабря отменяет баллы за скидки — что проверить</a>.</p>
+    <p>Также в линейке: <a href="/vagony/">CARBID · Вагоны</a> — проверка претензий за простой вагонов.</p>
+    <p>Страница не является публичной офертой. Условия покупки — в карточке товара на площадке.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* Настройки. DOWNLOAD — прямая ссылка на архив, METRIKA_ID — номер счётчика. */
+  var DOWNLOAD = "https://github.com/carbid-soft/pult/releases/download/v1.2.0/CARBID-1.2.0-Market-Windows-x64.zip";
+  var METRIKA_ID = "113673204";
+
+  var downloadSet = DOWNLOAD.indexOf("__") !== 0;
+  var metrikaSet = /^\d+$/.test(METRIKA_ID);
+  var local = !/^https?:$/.test(location.protocol);
+  if (local && (!downloadSet || !metrikaSet)) {
+    var missing = [];
+    if (!downloadSet) missing.push("ссылка на архив");
+    if (!metrikaSet) missing.push("счётчик Метрики");
+    var draft = document.getElementById("draft");
+    draft.textContent = "Черновик: не задано — " + missing.join(", ") + ". Подставляется в начале скрипта внизу страницы.";
+    draft.className = "draft on";
+  }
+
+  if (downloadSet) document.getElementById("download").href = DOWNLOAD;
+
+  function goal(name) {
+    try { if (metrikaSet && window.ym) window.ym(Number(METRIKA_ID), "reachGoal", name); } catch (e) {}
+  }
+  document.getElementById("download").addEventListener("click", function () { goal("pult_download"); });
+  document.getElementById("buy").addEventListener("click", function () { goal("pult_buy"); });
+
+  if (metrikaSet) {
+    (function (m, e, t, r, i, k, a) {
+      m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments); };
+      m[i].l = 1 * new Date();
+      k = e.createElement(t); a = e.getElementsByTagName(t)[0];
+      k.async = 1; k.src = r; a.parentNode.insertBefore(k, a);
+    })(window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+    window.ym(Number(METRIKA_ID), "init", { clickmap: true, trackLinks: true, accurateTrackBounce: true });
+  }
+})();
+</script>
+</body>
+</html>

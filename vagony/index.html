@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Проверка претензии за простой вагонов — CARBID · Вагоны</title>
+<meta name="description" content="Программа сверяет претензию оператора или экспедитора за сверхнормативный простой с памятками ГУ-45, ведомостями ГУ-46 и актами ГУ-23 и собирает ответ с расчётом. Без 1С и ЭТРАН-интеграции, работает без интернета.">
+<meta property="og:title" content="Проверка претензии за простой вагонов — CARBID · Вагоны">
+<meta property="og:description" content="Сверка претензии по каждому вагону с вашими памятками и актами. Ответ с приложением-расчётом.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0d141e">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23c0e36a'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-family='Segoe UI,Arial,sans-serif' font-weight='800' font-size='20' fill='%230d141e'%3EC%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0d141e;
+    --card: #141f2d;
+    --card-2: #192333;
+    --line: #233246;
+    --text: #f2f5fa;
+    --muted: #b1c0d1;
+    --accent: #c0e36a;
+    --accent-2: #d3ef8b;
+    --on-accent: #0d141e;
+    --warn: #f2c14e;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, -apple-system, Tahoma, sans-serif;
+    font-size: 17px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent-2); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+  /* ── Черновик ── */
+  .draft {
+    display: none;
+    background: #5a1d17; color: #ffd9d3;
+    text-align: center; font-size: 14px; padding: 8px 16px;
+  }
+  .draft.on { display: block; }
+
+  /* ── Шапка ── */
+  header { padding: 22px 0; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: var(--text); text-decoration: none; }
+  .logo-mark { width: 32px; height: 32px; border-radius: 9px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-weight: 800; font-size: 19px; font-style: normal; }
+  .logo small { font-weight: 600; font-size: 13px; color: var(--accent); letter-spacing: .06em; text-transform: uppercase; margin-left: 2px; }
+  .nav { display: flex; gap: 22px; font-size: 15px; }
+  .nav a { color: var(--muted); text-decoration: none; }
+  .nav a:hover { color: var(--text); }
+
+  /* ── Первый экран ── */
+  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 44px; align-items: center; padding: 34px 0 64px; }
+  .tag { display: inline-block; font-size: 13px; font-weight: 600; color: var(--accent); background: rgba(192,227,106,.10); border: 1px solid rgba(192,227,106,.28); padding: 5px 12px; border-radius: 999px; margin-bottom: 18px; }
+  h1 { font-size: 44px; line-height: 1.12; letter-spacing: -0.02em; margin: 0 0 18px; font-weight: 800; }
+  .lead { color: var(--muted); font-size: 19px; margin: 0 0 28px; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font: inherit; font-weight: 700; font-size: 16px;
+    padding: 14px 22px; border-radius: 12px; border: 0; cursor: pointer; text-decoration: none;
+    transition: transform .15s ease, background .15s ease;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-main { background: var(--accent); color: var(--on-accent); }
+  .btn-main:hover { background: var(--accent-2); }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  .btn-ghost:hover { border-color: var(--accent); }
+  .fine { font-size: 14px; color: var(--muted); margin-top: 14px; }
+
+  /* ── Экран программы ── */
+  .screen { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: 0 30px 60px -30px rgba(0,0,0,.6); }
+  .screen-top { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  .dots { display: flex; gap: 6px; margin-right: 6px; }
+  .dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); display: block; }
+  .screen-body { padding: 18px; }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .tile { background: var(--card-2); border-radius: 12px; padding: 12px; }
+  .tile b { display: block; font-size: 20px; letter-spacing: -0.01em; }
+  .tile span { font-size: 12px; color: var(--muted); }
+  .tile.good b { color: var(--text); }
+  .tile.bad b { color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; padding: 7px 6px; border-bottom: 1px solid var(--line); }
+  td { padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .pill.ok { background: rgba(177,192,209,.12); color: var(--muted); }
+  .pill.cut { background: rgba(192,227,106,.16); color: var(--accent); }
+  .pill.ask { background: rgba(242,193,78,.14); color: var(--warn); }
+  .why { color: var(--muted); font-size: 12px; }
+  .screen-note { font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+  /* ── Секции ── */
+  section { padding: 56px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: 32px; line-height: 1.2; letter-spacing: -0.015em; margin: 0 0 12px; font-weight: 800; }
+  .sub { color: var(--muted); margin: 0 0 30px; max-width: 720px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+  .card h3 { margin: 0 0 8px; font-size: 19px; }
+  .card p { margin: 0; color: var(--muted); font-size: 16px; }
+  .num { font-size: 13px; font-weight: 700; color: var(--accent-2); margin-bottom: 10px; display: block; }
+
+  /* ── Сравнение ── */
+  .compare .card b { display: block; font-size: 24px; margin: 6px 0 6px; }
+  .compare .ours { border-color: var(--accent); background: linear-gradient(180deg, rgba(192,227,106,.10), var(--card) 70%); }
+
+  /* ── Цена ── */
+  .price { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; }
+  .price-main b { font-size: 46px; letter-spacing: -0.02em; display: block; line-height: 1.1; }
+  .price-main ul, .card ul { margin: 14px 0 0; padding-left: 20px; color: var(--muted); }
+  .price-main li, .card li { margin: 4px 0; }
+  .early { border-color: var(--accent); }
+  .early b { font-size: 34px; display: block; }
+  .early s { color: var(--muted); }
+  .mail-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }
+  .mail { font-weight: 700; color: var(--text); background: var(--card-2); padding: 10px 14px; border-radius: 10px; word-break: break-all; }
+  .copy { font: inherit; font-size: 14px; background: transparent; color: var(--accent-2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; cursor: pointer; }
+
+  /* ── Вопросы ── */
+  details { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; margin-bottom: 10px; }
+  summary { cursor: pointer; font-weight: 700; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; float: right; color: var(--muted); font-weight: 400; }
+  details[open] summary::after { content: "–"; }
+  details p { color: var(--muted); margin: 10px 0 0; }
+
+  footer { border-top: 1px solid var(--line); padding: 30px 0 46px; color: var(--muted); font-size: 14px; }
+  footer p { margin: 6px 0; }
+
+  @media (max-width: 900px) {
+    .hero, .price { grid-template-columns: 1fr; }
+    .grid3 { grid-template-columns: 1fr; }
+    .grid2 { grid-template-columns: 1fr; }
+    h1 { font-size: 34px; }
+    .nav { display: none; }
+  }
+  @media (max-width: 520px) {
+    body { font-size: 16px; }
+    .wrap { padding: 0 16px; }
+    h1 { font-size: 29px; }
+    h2 { font-size: 25px; }
+    .tiles { grid-template-columns: 1fr 1fr; }
+    .tiles .tile:first-child { grid-column: 1 / -1; }
+    .hide-sm { display: none; }
+    .btn { width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="draft" id="draft">Черновик: не заданы почта и счётчик Метрики. До публикации их подставляют в начале скрипта внизу страницы.</div>
+
+<header>
+  <div class="wrap bar">
+    <a class="logo" href="#top">
+      <i class="logo-mark" aria-hidden="true">C</i>
+      CARBID <small>Вагоны</small>
+    </a>
+    <nav class="nav">
+      <a href="#how">Как работает</a>
+      <a href="#price">Цена</a>
+      <a href="#free">Бесплатный калькулятор</a>
+      <a href="#faq">Вопросы</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap hero">
+    <div>
+      <span class="tag">Для предприятий с путями необщего пользования</span>
+      <h1>Претензия за простой вагонов? Проверьте её по своим памяткам</h1>
+      <p class="lead">Программа сверяет реестр претензии оператора или экспедитора с вашими памятками ГУ-45, ведомостями ГУ-46 и актами ГУ-23. Показывает, где посчитано лишнее, и собирает ответ с приложением-расчётом.</p>
+      <div class="buttons">
+        <a class="btn btn-main js-lead" href="#price">Ранний доступ: −50 %</a>
+        <a class="btn btn-ghost" href="#free">Бесплатный калькулятор</a>
+      </div>
+      <p class="fine">Без 1С и без интеграции с ЭТРАН. Работает без интернета: данные не уходят с компьютера.</p>
+    </div>
+
+    <div class="screen" aria-label="Пример экрана программы на вымышленных данных">
+      <div class="screen-top"><span class="dots"><i></i><i></i><i></i></span>Сверка претензии № 14 · ООО «Пример-Транс» · сентябрь</div>
+      <div class="screen-body">
+        <div class="tiles">
+          <div class="tile"><b>62 000 ₽</b><span>предъявлено · 31 сут.</span></div>
+          <div class="tile good"><b>36 000 ₽</b><span>подтверждаем</span></div>
+          <div class="tile bad"><b>26 000 ₽</b><span>оспариваем</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Вагон</th><th>Сут. по претензии → по памяткам</th><th class="hide-sm">Итог</th></tr></thead>
+          <tbody>
+            <tr><td class="n">54012318</td><td class="n">4 → 4</td><td class="hide-sm"><span class="pill ok">верно</span></td></tr>
+            <tr><td class="n">54017720</td><td><span class="n">6 → 3</span><div class="why">ожидание подачи по вине перевозчика, акт ГУ-23 № 118</div></td><td class="hide-sm"><span class="pill cut">−3 сут.</span></td></tr>
+            <tr><td class="n">60971145</td><td><span class="n">5 → 2</span><div class="why">конец простоя взят по станции, уборка по ГУ-45 на 3 сут. раньше</div></td><td class="hide-sm"><span class="pill cut">−3 сут.</span></td></tr>
+            <tr><td class="n">60973382</td><td class="n">3 → 3</td><td class="hide-sm"><span class="pill ok">верно</span></td></tr>
+            <tr><td class="n">55120904</td><td><span class="n">2 → ?</span><div class="why">нет памятки на подачу — запросить у станции</div></td><td class="hide-sm"><span class="pill ask">проверить</span></td></tr>
+          </tbody>
+        </table>
+        <div class="screen-note">Показано 5 вагонов из 12. Пример на вымышленных данных.</div>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <h2>Почему по претензиям переплачивают</h2>
+      <p class="sub">Оператор считает простой по своим данным. Что на самом деле было на вашем пути, знают только ваши бумаги, и сверять их с реестром долго.</p>
+      <div class="grid3">
+        <div class="card">
+          <h3>5 дней — и простой «согласован»</h3>
+          <p>Во многих договорах экспедиции так: не прислали ГУ-45 или ГУ-46 в срок — сутки простоя считаются признанными.</p>
+        </div>
+        <div class="card">
+          <h3>Сутки считают по станции</h3>
+          <p>Прибытие и отправление берут из данных станции. Ожидание подачи по вине перевозчика и задержка документов на порожний попадают в ваш простой.</p>
+        </div>
+        <div class="card">
+          <h3>Сверка — неделя в Excel</h3>
+          <p>Сотня вагонов, реестр претензии, памятки, акты. Вручную на это уходят дни, поэтому часто не сверяют, а платят.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <h2>Как работает</h2>
+      <p class="sub">Три шага. Норматив, ставку, округление неполных суток и исключаемое время задаёте для каждого договора отдельно — так, как написано у вас.</p>
+      <div class="grid3">
+        <div class="card">
+          <span class="num">ШАГ 1</span>
+          <h3>Вставьте данные из Excel</h3>
+          <p>Реестр претензии, выгрузки памяток ГУ-45 и ведомостей ГУ-46, акты ГУ-23. Столбцы сопоставляются один раз.</p>
+        </div>
+        <div class="card">
+          <span class="num">ШАГ 2</span>
+          <h3>Сверка по каждому вагону</h3>
+          <p>Верно, завышено на столько-то суток, исключить по акту или не хватает отметок. Итог: сколько признаём, сколько оспариваем.</p>
+        </div>
+        <div class="card">
+          <span class="num">ШАГ 3</span>
+          <h3>Ответ на претензию</h3>
+          <p>Письмо-возражение и приложение-расчёт по вагонам в Word и Excel со ссылками на памятки и акты. Остаётся проверить и подписать.</p>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:16px">
+        <div class="card">
+          <h3>Что ещё внутри</h3>
+          <ul>
+            <li>Журнал вагонов на путях: прибытие, подача, готовность, уборка, сдача.</li>
+            <li>Оборот по четырём этапам: видно, сколько времени зависит от вас, а сколько — от перевозчика.</li>
+            <li>Штрафы по статьям 99–100 Устава в обе стороны — и за задержку подачи и уборки перевозчиком.</li>
+            <li>Отчёт за месяц по контрагентам.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Что ловит в данных</h3>
+          <ul>
+            <li>Уборка раньше подачи — обратный ход времени.</li>
+            <li>Незакрытые заходы: вагон уехал, а в журнале «стоит».</li>
+            <li>Вагоны из претензии, которых нет в ваших памятках.</li>
+            <li>Претензию после срока, указанного в договоре.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="compare">
+    <div class="wrap">
+      <h2>Сколько стоит иначе</h2>
+      <p class="sub">Цены — по открытым прайсам на октябрь 2026 года.</p>
+      <div class="grid3">
+        <div class="card">
+          <h3>Модули 1С ↔ ЭТРАН</h3>
+          <b>от 120 000 ₽</b>
+          <p>за модуль, плюс сопровождение от 150 000 ₽ в год, проект с РЖД и защищённый канал связи.</p>
+        </div>
+        <div class="card">
+          <h3>Юрист по спору о простое</h3>
+          <b>от 35 000 ₽</b>
+          <p>за одно дело в суде, плюс процент от суммы. И всё равно нужны ваши памятки и акты.</p>
+        </div>
+        <div class="card ours">
+          <h3>CARBID · Вагоны</h3>
+          <b>24 900 ₽</b>
+          <p>один раз за предприятие. Ставится за 5 минут, ИТ и безопасность согласовывать нечего.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="price">
+    <div class="wrap">
+      <h2>Цена</h2>
+      <p class="sub">Программа сейчас в разработке. Первым десяти предприятиям — половина цены, а платить нужно только после того, как вы посмотрите готовую версию.</p>
+      <div class="price">
+        <div class="card price-main">
+          <h3>Лицензия на предприятие</h3>
+          <b>24 900 ₽</b>
+          <ul>
+            <li>Разовая оплата, без подписки.</li>
+            <li>12 месяцев обновлений: новые формы и изменения норм.</li>
+            <li>Дальше обновления — по желанию, 6 900 ₽ в год. Без них программа продолжает работать.</li>
+            <li>Windows 10 и 11. Интернет не нужен.</li>
+          </ul>
+        </div>
+        <div class="card early">
+          <h3>Ранний доступ</h3>
+          <b>12 450 ₽ <s>24 900 ₽</s></b>
+          <p>Напишите на почту — пришлём версию, как только она будет готова. Заявка ни к чему не обязывает.</p>
+          <p style="margin-top:10px">Чтобы программа подошла именно вам, ответьте в письме на три вопроса: сколько вагонов в месяц, кто выставляет претензии и как вы их сейчас проверяете.</p>
+          <div class="mail-row">
+            <a class="btn btn-main js-lead" id="lead" href="#">Написать на почту</a>
+          </div>
+          <div class="mail-row">
+            <span class="mail js-email"></span>
+            <button class="copy" id="copy" type="button">Скопировать адрес</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="free">
+    <div class="wrap">
+      <h2>Бесплатно уже сейчас</h2>
+      <p class="sub">Калькулятор простоя CARBID — один файл. Скачайте и откройте двойным щелчком: установка и интернет не нужны.</p>
+      <div class="grid3">
+        <div class="card">
+          <h3>Простой и плата</h3>
+          <p>Время нахождения, часы сверх норматива и плата по единой или прогрессивной ставке. Можно вставить весь список из Excel.</p>
+        </div>
+        <div class="card">
+          <h3>Оборот вагона</h3>
+          <p>Четыре этапа: приём, подача, готовность, уборка. Видно, где вагон теряет часы и чьё это время.</p>
+        </div>
+        <div class="card">
+          <h3>Проверка счёта</h3>
+          <p>Сравнение суммы счёта с вашим расчётом и приложение-расчёт к возражениям.</p>
+        </div>
+      </div>
+      <div class="buttons" style="margin-top:22px">
+        <a class="btn btn-ghost" id="calc" href="calc.html" download="CARBID — калькулятор простоя.html">Скачать калькулятор</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <h2>Вопросы</h2>
+      <details>
+        <summary>Чем это отличается от ЭТРАН и сервисов дислокации?</summary>
+        <p>Они видят станцию: когда вагон прибыл и когда ушёл. Что было на вашем пути — подача, уведомление о готовности, уборка, задержки по вине перевозчика — есть только в ваших памятках, ведомостях и актах. Спор решают именно они.</p>
+      </details>
+      <details>
+        <summary>Нужна интеграция с 1С или ЭТРАН?</summary>
+        <p>Нет. Выгрузки и реестр претензии вставляются из Excel. Проект с РЖД, защищённый канал и настройка 1С не нужны.</p>
+      </details>
+      <details>
+        <summary>Куда уходят данные?</summary>
+        <p>Никуда. Программа работает на вашем компьютере без интернета, поэтому согласовывать её со службой безопасности не нужно.</p>
+      </details>
+      <details>
+        <summary>У нас договор с оператором считает простой по-своему</summary>
+        <p>Для каждого договора задаются норматив (в сутках или часах и от какого события), ставка, правило округления неполных суток и время, которое исключается.</p>
+      </details>
+      <details>
+        <summary>Новый договор на эксплуатацию пути по приказу № 135 — учтено?</summary>
+        <p>Да. С 1 сентября 2026 года действуют новые формы договоров на эксплуатацию путей и на подачу и уборку вагонов. Технологический срок оборота, неоплачиваемое технологическое время и сроки уборки из вашего договора вносятся в программу как есть. Что проверить в новом договоре — <a href="/dogovor-ppnp-prikaz-135/">7 мест, где теряются деньги</a>.</p>
+      </details>
+      <details>
+        <summary>Это юридическая услуга?</summary>
+        <p>Нет. Программа считает и собирает документ по вашим данным. Решение, отправлять ли возражение, и подпись под ним — ваши.</p>
+      </details>
+      <details>
+        <summary>Как оплатить организации?</summary>
+        <p>Способы оплаты пришлём вместе с готовой версией. Заявка на ранний доступ ни к чему не обязывает.</p>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><b style="color:var(--text)">CARBID · Вагоны</b> — программа для путей необщего пользования. Из линейки программ CARBID. Почта: <span class="js-email"></span></p>
+    <p>Расчёты справочные: ставки, нормативы и исключаемое время берутся из ваших договоров. Страница не является юридической консультацией и публичной офертой.</p>
+    <p>Сайт считает посещения Яндекс Метрикой. Форм и сбора данных на сайте нет.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* Настройки — подставить до публикации. */
+  var EMAIL = "carbidproduction@mail.ru";
+  var METRIKA_ID = "113673204";
+
+  var emailSet = EMAIL.indexOf("__") !== 0;
+  var metrikaSet = /^\d+$/.test(METRIKA_ID);
+  /* Полоса «Черновик» — только при просмотре с компьютера, посетители её не видят. */
+  var local = !/^https?:$/.test(location.protocol);
+  if (local && (!emailSet || !metrikaSet)) {
+    var missing = [];
+    if (!emailSet) missing.push("почта");
+    if (!metrikaSet) missing.push("счётчик Метрики");
+    var draft = document.getElementById("draft");
+    draft.textContent = "Черновик: не задано — " + missing.join(", ") + ". Подставляется в начале скрипта внизу страницы.";
+    draft.className = "draft on";
+  }
+
+  var shownEmail = emailSet ? EMAIL : "почта-бренда@не-задана";
+  var nodes = document.querySelectorAll(".js-email");
+  for (var i = 0; i < nodes.length; i++) nodes[i].textContent = shownEmail;
+
+  var subject = "Ранний доступ — CARBID · Вагоны";
+  var body = [
+    "Здравствуйте! Хочу ранний доступ к программе.",
+    "",
+    "Вагонов в месяц:",
+    "Кто выставляет претензии (оператор, экспедитор, поставщик, РЖД):",
+    "Как сейчас проверяем (Excel, 1С, никак):",
+    ""
+  ].join("\n");
+  var mailto = "mailto:" + EMAIL + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+  if (emailSet) document.getElementById("lead").href = mailto;
+
+  function goal(name) {
+    try { if (metrikaSet && window.ym) window.ym(Number(METRIKA_ID), "reachGoal", name); } catch (e) {}
+  }
+
+  document.getElementById("lead").addEventListener("click", function () { goal("early_access"); });
+  document.getElementById("calc").addEventListener("click", function () { goal("calc_download"); });
+  document.getElementById("copy").addEventListener("click", function () {
+    var btn = this;
+    goal("copy_email");
+    function done() { btn.textContent = "Скопировано"; setTimeout(function () { btn.textContent = "Скопировать адрес"; }, 2000); }
+    try {
+      navigator.clipboard.writeText(shownEmail).then(done, function () { window.prompt("Адрес почты:", shownEmail); });
+    } catch (e) { window.prompt("Адрес почты:", shownEmail); }
+  });
+
+  /* Цель «дошёл до цены» — один раз за визит. */
+  var price = document.getElementById("price");
+  if ("IntersectionObserver" in window) {
+    var seen = false;
+    new IntersectionObserver(function (entries) {
+      if (!seen && entries[0].isIntersecting) { seen = true; goal("price_seen"); }
+    }, { threshold: 0.4 }).observe(price);
+  }
+
+  /* Яндекс Метрика — только если задан номер счётчика. */
+  if (metrikaSet) {
+    (function (m, e, t, r, i, k, a) {
+      m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments); };
+      m[i].l = 1 * new Date();
+      k = e.createElement(t); a = e.getElementsByTagName(t)[0];
+      k.async = 1; k.src = r; a.parentNode.insertBefore(k, a);
+    })(window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+    window.ym(Number(METRIKA_ID), "init", { clickmap: true, trackLinks: true, accurateTrackBounce: true });
+  }
+})();
+</script>
+</body>
+</html>

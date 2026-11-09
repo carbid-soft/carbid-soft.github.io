@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Калькулятор маржи Wildberries и Ozon: сколько остаётся с продажи в акции — CARBID</title>
+<meta name="description" content="Бесплатный калькулятор маржи для продавцов WB и Ozon: прибыль с единицы по обычной цене и в акции, и наибольшая скидка, при которой товар не уходит ниже вашего порога. Считает в браузере, ничего не отправляет.">
+<meta property="og:title" content="Калькулятор маржи WB и Ozon — прибыль в акции и предельная скидка">
+<meta property="og:description" content="Сколько остаётся с продажи в акции и какая скидка — последняя безопасная. Бесплатно, без регистрации.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0d141e">
+<link rel="canonical" href="https://carbid-soft.github.io/kalkulyator-marzhi/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23c0e36a'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-family='Segoe UI,Arial,sans-serif' font-weight='800' font-size='20' fill='%230d141e'%3EC%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0d141e; --card: #141f2d; --card-2: #192333; --line: #233246;
+    --text: #f2f5fa; --muted: #b1c0d1; --accent: #c0e36a; --accent-2: #d3ef8b;
+    --on-accent: #0d141e; --bad: #ff8a7a; --warn: #f2c14e; --radius: 16px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, -apple-system, Tahoma, sans-serif; font-size: 17px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+  header { padding: 22px 0; }
+  .logo { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: var(--text); text-decoration: none; }
+  .logo-mark { width: 32px; height: 32px; border-radius: 9px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-weight: 800; font-size: 19px; font-style: normal; }
+  h1 { font-size: 40px; line-height: 1.12; letter-spacing: -0.02em; margin: 18px 0 12px; font-weight: 800; }
+  .lead { color: var(--muted); font-size: 18px; margin: 0 0 28px; max-width: 800px; }
+  h2 { font-size: 28px; line-height: 1.2; margin: 0 0 12px; font-weight: 800; }
+  h3 { font-size: 19px; margin: 0 0 8px; }
+
+  .calc { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+  .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+  .field label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 5px; }
+  .field input { width: 100%; font: inherit; font-size: 17px; color: var(--text); background: var(--card-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-variant-numeric: tabular-nums; }
+  .field input:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
+  .field.wide { grid-column: 1 / -1; }
+  .group { grid-column: 1 / -1; font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-top: 6px; }
+  .hint { font-size: 13px; color: var(--muted); margin-top: 12px; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .col { background: var(--card-2); border-radius: 12px; padding: 14px; }
+  .col .t { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .col .p { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .col .s { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .neg { color: var(--bad); }
+  .ok { color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; font-variant-numeric: tabular-nums; }
+  td { padding: 7px 4px; border-bottom: 1px solid var(--line); }
+  td:nth-child(2), td:nth-child(3) { text-align: right; white-space: nowrap; }
+  th { text-align: right; font-size: 13px; color: var(--muted); font-weight: 600; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+  th:first-child { text-align: left; }
+  .verdict { margin-top: 14px; padding: 14px; border-radius: 12px; background: rgba(192,227,106,.10); border: 1px solid rgba(192,227,106,.28); }
+  .verdict.bad { background: rgba(255,138,122,.10); border-color: rgba(255,138,122,.35); }
+  .verdict b { font-size: 18px; }
+
+  section { padding: 48px 0; border-top: 1px solid var(--line); margin-top: 40px; }
+  .text { max-width: 780px; }
+  .text p, .text li { color: var(--muted); }
+  .text strong { color: var(--text); }
+  .formula { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; font-family: Consolas, monospace; font-size: 15px; color: var(--text); overflow-x: auto; }
+  .cta { background: linear-gradient(180deg, rgba(192,227,106,.12), var(--card) 75%); border: 1px solid var(--accent); border-radius: var(--radius); padding: 26px; margin-top: 30px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; font: inherit; font-weight: 700; font-size: 16px; padding: 13px 20px; border-radius: 12px; text-decoration: none; background: var(--accent); color: var(--on-accent); margin-top: 8px; }
+  footer { border-top: 1px solid var(--line); padding: 30px 0 46px; color: var(--muted); font-size: 14px; margin-top: 40px; }
+
+  @media (max-width: 900px) { .calc { grid-template-columns: 1fr; } h1 { font-size: 32px; } }
+  @media (max-width: 520px) {
+    body { font-size: 16px; } .wrap { padding: 0 16px; } h1 { font-size: 27px; } h2 { font-size: 23px; }
+    .fields { grid-template-columns: 1fr; } .cols { grid-template-columns: 1fr; } .btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<header><div class="wrap"><a class="logo" href="/pult/"><i class="logo-mark" aria-hidden="true">C</i> CARBID</a></div></header>
+
+<main class="wrap">
+  <h1>Калькулятор маржи для Wildberries и Ozon: сколько остаётся с продажи в акции</h1>
+  <p class="lead">Введите цену, скидку акции и свои расходы. Калькулятор покажет прибыль с единицы по обычной цене и в акции, а главное — наибольшую скидку, при которой товар не уходит ниже вашего порога. Всё считается в браузере, данные никуда не отправляются.</p>
+
+  <div class="calc">
+    <div class="card">
+      <div class="fields">
+        <div class="group">Цена</div>
+        <div class="field"><label for="base">Цена до скидок, ₽</label><input id="base" type="number" min="0" step="1" value="2000" inputmode="decimal"></div>
+        <div class="field"><label for="disc">Ваша обычная скидка, %</label><input id="disc" type="number" min="0" max="99" step="0.1" value="20" inputmode="decimal"></div>
+        <div class="field wide"><label for="promo">Скидка в акции (итоговая, от цены до скидок), %</label><input id="promo" type="number" min="0" max="99" step="0.1" value="45" inputmode="decimal"></div>
+        <div class="group">Удержания площадки — из вашего кабинета</div>
+        <div class="field"><label for="comm">Комиссия, % от цены продажи</label><input id="comm" type="number" min="0" max="99" step="0.1" value="20" inputmode="decimal"></div>
+        <div class="field"><label for="acq">Эквайринг и прочие %, от цены</label><input id="acq" type="number" min="0" max="99" step="0.1" value="1.5" inputmode="decimal"></div>
+        <div class="field wide"><label for="log">Логистика и доставка за единицу, ₽</label><input id="log" type="number" min="0" step="1" value="150" inputmode="decimal"></div>
+        <div class="group">Ваши расходы</div>
+        <div class="field"><label for="cost">Себестоимость единицы, ₽</label><input id="cost" type="number" min="0" step="1" value="500" inputmode="decimal"></div>
+        <div class="field"><label for="other">Прочее на единицу (упаковка и т. п.), ₽</label><input id="other" type="number" min="0" step="1" value="30" inputmode="decimal"></div>
+        <div class="field"><label for="tax">Налог, % от цены продажи</label><input id="tax" type="number" min="0" max="99" step="0.1" value="6" inputmode="decimal"></div>
+        <div class="field"><label for="min">Ваш порог прибыли с единицы, ₽</label><input id="min" type="number" min="0" step="1" value="300" inputmode="decimal"></div>
+      </div>
+      <p class="hint">Цифры в полях — пример. Комиссию и логистику берите из своего кабинета: они зависят от категории, схемы (FBS/FBO) и габаритов. Налог упрощённо считается от цены продажи — уточните у своего бухгалтера.</p>
+    </div>
+
+    <div class="card" aria-live="polite">
+      <div class="cols">
+        <div class="col"><div class="t">По обычной цене</div><div class="p" id="pN">—</div><div class="s" id="sN"></div></div>
+        <div class="col"><div class="t">В акции</div><div class="p" id="pA">—</div><div class="s" id="sA"></div></div>
+      </div>
+      <table>
+        <thead><tr><th></th><th>Обычная</th><th>В акции</th></tr></thead>
+        <tbody>
+          <tr><td>Цена продажи</td><td id="r1n"></td><td id="r1a"></td></tr>
+          <tr><td>Комиссия и эквайринг</td><td id="r2n"></td><td id="r2a"></td></tr>
+          <tr><td>Логистика</td><td id="r3n"></td><td id="r3a"></td></tr>
+          <tr><td>Себестоимость и прочее</td><td id="r4n"></td><td id="r4a"></td></tr>
+          <tr><td>Налог</td><td id="r5n"></td><td id="r5a"></td></tr>
+        </tbody>
+      </table>
+      <div class="verdict" id="verdict"></div>
+    </div>
+  </div>
+
+  <section class="text">
+    <h2>Как считать маржу в акции</h2>
+    <p>Главная ошибка — смотреть на скидку отдельно от удержаний. Комиссия и эквайринг считаются <strong>от цены после скидки</strong>, а логистика и себестоимость остаются прежними. Поэтому минус 25 % к цене — это не минус 25 % к прибыли, а обычно гораздо больше: постоянные расходы съедают всё, что осталось.</p>
+    <div class="formula">прибыль = цена × (1 − комиссия − эквайринг − налог) − логистика − себестоимость − прочее</div>
+
+    <h3 style="margin-top:26px">Какая скидка — последняя безопасная</h3>
+    <p>Если задать порог прибыли с единицы, можно найти минимальную цену и из неё — наибольшую скидку:</p>
+    <div class="formula">минимальная цена = (порог + логистика + себестоимость + прочее) ÷ (1 − комиссия − эквайринг − налог)<br>наибольшая скидка = 1 − минимальная цена ÷ цена до скидок</div>
+    <p>Всё, что глубже этой скидки, продаётся ниже вашего порога. Если площадка предлагает акцию со скидкой больше — участвовать имеет смысл, только если вы сознательно покупаете оборот или место в выдаче.</p>
+
+    <h3 style="margin-top:26px">Почему в отчёте кажется, что «выросла комиссия»</h3>
+    <p>Wildberries в автоакциях поднимает скидку продавца, а Ozon с включённым автодобавлением сам ставит товары в свои акции. Доля удержаний от выручки после этого растёт, хотя ставка комиссии та же — просто цена, от которой всё считается, стала ниже. Поэтому сверять стоит не сумму к перечислению, а цену после всех акций с вашими расходами. Как выключить автодобавление на Ozon и вывести товар из акции — <a href="/avtodobavlenie-akcii-ozon/">пошаговая инструкция</a>. Что меняется в расчётах Ozon с 1 декабря 2026 — <a href="/tarif-ozon-1-dekabrya/">разбор</a>.</p>
+
+    <div class="cta">
+      <h3>Считать так каждый товар вручную — долго</h3>
+      <p>CARBID · Пульт продавца делает этот расчёт по всем товарам ваших кабинетов Wildberries, Ozon и Яндекс Маркета и показывает, какие акции увели товар ниже порога. Исправление — по кнопке и после подтверждения. Программа для Windows, 9 900 ₽ разово, есть бесплатная демонстрация.</p>
+      <a class="btn" href="/pult/">Посмотреть программу</a>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap">
+  <p><b style="color:var(--text)">CARBID</b> — программы для продавцов и предприятий. Почта: <a href="mailto:carbidproduction@mail.ru">carbidproduction@mail.ru</a></p>
+  <p>Расчёт справочный: ставки удержаний и налог берите из своего кабинета и у своего бухгалтера.</p>
+</div></footer>
+
+<script>
+(function () {
+  "use strict";
+  var ids = ["base", "disc", "promo", "comm", "acq", "log", "cost", "other", "tax", "min"];
+  function v(id) { var x = parseFloat(String(document.getElementById(id).value).replace(",", ".")); return isFinite(x) ? x : 0; }
+  function rub(x) { return (x < 0 ? "−" : "") + Math.abs(x).toLocaleString("ru-RU", { maximumFractionDigits: 0 }) + " ₽"; }
+  function pct(x) { return x.toLocaleString("ru-RU", { maximumFractionDigits: 1 }) + " %"; }
+  function set(id, t, cls) { var el = document.getElementById(id); el.textContent = t; if (cls !== undefined) el.className = cls; }
+
+  function calc() {
+    var base = v("base"), rate = (v("comm") + v("acq") + v("tax")) / 100;
+    var fixed = v("log") + v("cost") + v("other"), min = v("min");
+    function one(discount) {
+      var price = base * (1 - discount / 100);
+      var fees = price * (v("comm") + v("acq")) / 100, tax = price * v("tax") / 100;
+      return { price: price, fees: fees, tax: tax, profit: price - fees - tax - fixed };
+    }
+    var n = one(v("disc")), a = one(v("promo"));
+    [["n", n], ["a", a]].forEach(function (pair) {
+      var k = pair[0], r = pair[1];
+      set("r1" + k, rub(r.price)); set("r2" + k, rub(-r.fees)); set("r3" + k, rub(-v("log")));
+      set("r4" + k, rub(-(v("cost") + v("other")))); set("r5" + k, rub(-r.tax));
+    });
+    set("pN", rub(n.profit), "p " + (n.profit < 0 ? "neg" : ""));
+    set("pA", rub(a.profit), "p " + (a.profit < min ? "neg" : ""));
+    set("sN", n.price > 0 ? "маржа " + pct(n.profit / n.price * 100) : "");
+    set("sA", a.price > 0 ? "маржа " + pct(a.profit / a.price * 100) : "");
+
+    var verdict = document.getElementById("verdict");
+    if (rate >= 1 || base <= 0) { verdict.className = "verdict bad"; verdict.innerHTML = "<b>Проверьте проценты</b><br>Удержания и налог вместе не могут быть 100 % и больше."; return; }
+    var minPrice = (min + fixed) / (1 - rate), maxDisc = (1 - minPrice / base) * 100;
+    var drop = n.profit - a.profit;
+    var text;
+    if (maxDisc <= 0) {
+      text = "<b>Порог недостижим даже без скидки</b><br>Чтобы получать " + rub(min) + " с единицы, цена продажи должна быть не ниже " + rub(minPrice) + " — выше цены до скидок.";
+      verdict.className = "verdict bad";
+    } else {
+      text = "<b>Наибольшая безопасная скидка — " + pct(Math.floor(maxDisc * 10) / 10) + "</b><br>Минимальная цена продажи для порога " + rub(min) + " — " + rub(minPrice) + ". ";
+      text += a.profit < min
+        ? "Акция со скидкой " + pct(v("promo")) + " глубже: с каждой продажи вы теряете " + rub(drop) + " по сравнению с обычной ценой и оказываетесь ниже порога."
+        : "Акция со скидкой " + pct(v("promo")) + " в пределах порога: прибыль ниже обычной на " + rub(drop) + " с единицы.";
+      verdict.className = a.profit < min ? "verdict bad" : "verdict";
+    }
+    verdict.innerHTML = text;
+  }
+  ids.forEach(function (id) { document.getElementById(id).addEventListener("input", calc); });
+  calc();
+})();
+</script>
+<!-- Яндекс Метрика -->
+<script>
+(function (m, e, t, r, i, k, a) {
+  m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments); };
+  m[i].l = 1 * new Date();
+  k = e.createElement(t); a = e.getElementsByTagName(t)[0];
+  k.async = 1; k.src = r; a.parentNode.insertBefore(k, a);
+})(window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+ym(113673204, "init", { clickmap: true, trackLinks: true, accurateTrackBounce: true });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/113673204" style="position:absolute; left:-9999px;" alt=""></div></noscript>
+</body>
+</html>
