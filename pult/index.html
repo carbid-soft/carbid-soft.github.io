@@ -357,7 +357,8 @@
     draft.className = "draft on";
   }
 
-  if (downloadSet) document.getElementById("download").href = DOWNLOAD;
+  /* «Скачать» ведёт на страницу «Спасибо»: она сама запускает загрузку архива и подсказывает, что делать дальше (Р-075, 09.11). */
+  if (downloadSet) document.getElementById("download").href = local ? DOWNLOAD : "/pult/spasibo/?start=1";
 
   function goal(name) {
     try { if (metrikaSet && window.ym) window.ym(Number(METRIKA_ID), "reachGoal", name); } catch (e) {}
