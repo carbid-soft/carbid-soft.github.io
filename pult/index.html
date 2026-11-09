@@ -122,10 +122,10 @@
 <main id="top">
   <div class="wrap hero">
     <span class="tag">Wildberries · Ozon · Яндекс Маркет</span>
-    <h1>Все ваши кабинеты и продажи в одном окне</h1>
+    <h1 id="hero-title">Все ваши кабинеты и продажи в одном окне</h1>
     <p class="lead">Программа для Windows собирает заказы FBS, остатки, продажи за 30 дней, вопросы покупателей и маржу Wildberries, Ozon и Яндекс Маркета. А ещё находит акции ниже вашего порога и исправляет их только по вашей кнопке.</p>
     <div class="buttons">
-      <a class="btn btn-main js-download" href="#try">Скачать бесплатно</a>
+      <a class="btn btn-main js-download" id="hero-download" href="#try">Скачать бесплатно</a>
       <a class="btn btn-ghost js-buy" href="#price">Купить — 4 999 ₽ разово</a>
     </div>
     <p class="fine">Бесплатно — демонстрация на вымышленных данных. Свои кабинеты подключаются кодом активации. Ключи API остаются на вашем компьютере.</p>
@@ -291,6 +291,9 @@
           <div class="buttons" style="margin-top:18px">
             <a class="btn btn-main js-buy" id="buy" href="https://market.yandex.ru/card/carbid--programma-dlya-kabinetov-marketpleysov-windows/234719475638566912" target="_blank" rel="noopener">Купить на Яндекс Маркете</a>
           </div>
+          <p class="fine">Начните с ключа только на чтение — Пульт покажет проблемы и ничего не изменит. Код активации и инструкция придут на e-mail из заказа; не пришли — напишите на <a href="mailto:carbidproduction@mail.ru">carbidproduction@mail.ru</a>, отвечу лично.</p>
+          <p class="fine"><strong>Первым 10 покупателям</strong> — помогу подключить кабинеты в переписке и разберём первый отчёт сторожа. Осталось мест: 10 из 10.</p>
+          <p class="fine">Нужна флешка с доставкой — <a href="https://www.wildberries.ru/catalog/1864311950/detail.aspx" target="_blank" rel="noopener">USB-комплект на Wildberries</a>, он дороже из-за носителя и доставки. Без флешки — код на e-mail за 4 999 ₽.</p>
         </div>
         <div class="card">
           <h3>Чего в версии 1.2 нет</h3>
@@ -366,6 +369,27 @@
   document.getElementById("download").addEventListener("click", function () { goal("pult_download"); });
   document.getElementById("buy").addEventListener("click", function () { goal("pult_buy"); });
 
+  /* Р-078, 09.11: кнопка первого экрана сразу на скачивание (с целью pult_download); на телефоне — «отправить ссылку себе». */
+  var hero = document.getElementById("hero-download");
+  var phone = window.matchMedia && window.matchMedia("(max-width: 700px)").matches && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+  if (hero && downloadSet && !local) {
+    if (phone) {
+      hero.textContent = "Отправить ссылку себе на почту";
+      hero.href = "mailto:?subject=" + encodeURIComponent("CARBID Пульт — скачать на компьютере") +
+        "&body=" + encodeURIComponent("Демонстрация для Windows: https://carbid-soft.github.io/pult/?utm_source=self&utm_medium=email");
+    } else {
+      hero.href = "/pult/spasibo/?start=1";
+      hero.addEventListener("click", function () { goal("pult_download"); });
+    }
+  }
+
+  /* Пришли со страниц про акции — заголовок про акции (вариант B, Р-078). */
+  var variant = "A";
+  if (/carbid-soft\.github\.io\/(kak-vyjti|avtoakcii|elastichnyj|avtodobavlenie|tarif|minimalnaya|kalkulyator)/.test(document.referrer || "")) {
+    var title = document.getElementById("hero-title");
+    if (title) { title.textContent = "Какие товары акции WB, Ozon и Маркета увели ниже вашего порога маржи — во всех кабинетах сразу"; variant = "B"; }
+  }
+
   if (metrikaSet) {
     (function (m, e, t, r, i, k, a) {
       m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments); };
@@ -373,7 +397,7 @@
       k = e.createElement(t); a = e.getElementsByTagName(t)[0];
       k.async = 1; k.src = r; a.parentNode.insertBefore(k, a);
     })(window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-    window.ym(Number(METRIKA_ID), "init", { clickmap: true, trackLinks: true, accurateTrackBounce: true });
+    window.ym(Number(METRIKA_ID), "init", { clickmap: true, trackLinks: true, accurateTrackBounce: true, params: { hero: variant, phone: phone ? "yes" : "no" } });
   }
 })();
 </script>
