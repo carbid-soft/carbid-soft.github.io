@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Как выйти из автоакции WB: до старта, во время и после — CARBID</title>
+<meta name="description" content="Как вывести товар из автоакции Wildberries: исключить через файл до старта, поднять цену выше плановой во время акции, вернуть скидку после. И как не попадать снова: минимальная цена и блокировка для автоакций.">
+<meta property="og:title" content="Как выйти из автоакции Wildberries">
+<meta property="og:description" content="До старта, во время акции и после — по шагам. Плюс минимальная цена и блокировка, чтобы WB не снижал цену снова.">
+<meta property="og:type" content="article">
+<meta name="theme-color" content="#0d141e">
+<link rel="canonical" href="https://carbid-soft.github.io/kak-vyjti-iz-avtoakcii-wb/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23c0e36a'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-family='Segoe UI,Arial,sans-serif' font-weight='800' font-size='20' fill='%230d141e'%3EC%3C/text%3E%3C/svg%3E">
+<style>
+  :root { --bg: #0d141e; --card: #141f2d; --card-2: #192333; --line: #233246; --text: #f2f5fa; --muted: #b1c0d1; --accent: #c0e36a; --on-accent: #0d141e; --warn: #f2c14e; --radius: 16px; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, -apple-system, Tahoma, sans-serif; font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 0 20px; }
+  header { padding: 22px 0; }
+  .logo { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: var(--text); text-decoration: none; }
+  .logo-mark { width: 32px; height: 32px; border-radius: 9px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-weight: 800; font-size: 19px; font-style: normal; }
+  .meta { color: var(--muted); font-size: 14px; }
+  h1 { font-size: 38px; line-height: 1.15; letter-spacing: -0.02em; margin: 14px 0 14px; font-weight: 800; }
+  h2 { font-size: 26px; line-height: 1.25; margin: 40px 0 12px; font-weight: 800; }
+  h3 { font-size: 19px; margin: 24px 0 8px; }
+  p, li { color: var(--muted); }
+  strong { color: var(--text); }
+  ol, ul { padding-left: 22px; }
+  li { margin: 6px 0; }
+  .lead { font-size: 19px; }
+  .box { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 22px; margin: 18px 0; }
+  .warn { border-color: rgba(242,193,78,.45); background: rgba(242,193,78,.07); }
+  .warn strong { color: var(--warn); }
+  code { font-family: Consolas, monospace; font-size: 15px; background: var(--card-2); padding: 2px 6px; border-radius: 6px; color: var(--text); }
+  pre { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; overflow-x: auto; font-size: 14px; }
+  pre code { background: none; padding: 0; }
+  .toc { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 22px; }
+  .toc a { text-decoration: none; }
+  .cta { background: linear-gradient(180deg, rgba(192,227,106,.12), var(--card) 75%); border: 1px solid var(--accent); border-radius: var(--radius); padding: 24px; margin-top: 36px; }
+  .btn { display: inline-flex; font: inherit; font-weight: 700; font-size: 16px; padding: 13px 20px; border-radius: 12px; text-decoration: none; background: var(--accent); color: var(--on-accent); margin: 8px 10px 0 0; }
+  .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  footer { border-top: 1px solid var(--line); padding: 30px 0 46px; color: var(--muted); font-size: 14px; margin-top: 48px; }
+  footer p { font-size: 14px; }
+  @media (max-width: 520px) { body { font-size: 16px; } .wrap { padding: 0 16px; } h1 { font-size: 28px; } h2 { font-size: 22px; } .btn { width: 100%; justify-content: center; } }
+</style>
+</head>
+<body>
+<header><div class="wrap"><a class="logo" href="/pult/"><i class="logo-mark" aria-hidden="true">C</i> CARBID</a></div></header>
+
+<main class="wrap">
+  <p class="meta">Короткий ответ для продавцов Wildberries · 9 ноября 2026</p>
+  <h1>Как выйти из автоакции WB и не дать площадке снова снизить цену</h1>
+  <p class="lead">Способ зависит от того, когда вы заметили автоакцию. Ниже — три ситуации по шагам и защита на будущее. Подробный разбор с источниками — в инструкции <a href="/avtoakcii-wb/">«Автоакции WB: где увидеть, что площадка уже снизила вашу цену»</a>.</p>
+  <div class="box"><strong>Коротко.</strong> До старта — исключить товар через файл акции. Акция идёт — поднять цену выше плановой. Акция закончилась — вернуть свою скидку вручную. Надолго — минимальная цена или блокировка для автоакций.</div>
+
+  <h2>1. Акция ещё не началась</h2>
+  <ol>
+    <li>Скачайте файл акции.</li>
+    <li>Уберите из участия товары, которые не выдерживают плановую цену.</li>
+    <li>Загрузите файл и нажмите «Исключить товары» (в справке встречается и «Исключить товары из акции»).</li>
+  </ol>
+  <p>Шкала в панели покажет, сколько товаров участвует и сколько исключено. Исключения привязаны к акции и к выбранной глубине скидки: для новой глубины их настраивают заново.</p>
+
+  <h2>2. Акция уже идёт</h2>
+  <p>После старта файл не поможет. Чтобы вывести товар, в «Цены и скидки» сделайте цену <strong>выше плановой</strong> — проще всего вернуть свою скидку продавца. Плановая цена есть в файле акции. Если потом снова опустите цену до плановой, товар сам вернётся в идущую автоакцию.</p>
+
+  <h2>3. Акция закончилась</h2>
+  <p>Скидка сама не вернётся. Проверьте в «Цены и скидки» товары, которые были в акции, и поставьте свою скидку.</p>
+
+  <h2>Чтобы не попадать снова</h2>
+  <p>«Цены и скидки» → «Обновить через Excel» → «Минимальные цены и блокировки для автоакций» → «Сформировать шаблон» → «Скачать шаблон». Заполните два столбца:</p>
+  <ul>
+    <li><strong>«Новая минимальная цена для применения скидки по автоакции»</strong> — целое число. Если в момент старта плановая цена ниже вашей минимальной, скидку автоакции к товару не применят. На уже идущую акцию она не влияет.</li>
+    <li><strong>«Новая блокировка применения скидки по автоакции»</strong> — 7 дней, 30 дней или бессрочно.</li>
+  </ul>
+  <p>Загрузите шаблон и нажмите «Применить изменения». Обе настройки работают только для автоакций. Проверка — столбец «Минимальная цена и блокировка в автоакциях» в «Цены и скидки». Блокировка на 7 или 30 дней и минимальная цена со сроком истекают — их нужно продлевать.</p>
+
+  <div class="box warn"><strong>Осторожно с кнопкой «Добавить все подходящие».</strong> Она есть в уже идущей автоакции и добавляет в неё все подходящие товары — заблокированные, с минимальной ценой и исключённые раньше — по плановым ценам. Для этой акции защита не действует, а после её окончания цены сами не вернутся.</div>
+
+  <h2>Выходить ли из каждой автоакции?</h2>
+  <p>Не обязательно. По справке WB на 28.10.2026, участие в акциях — один из ключевых факторов ранжирования, а уровень продвижения растёт с глубиной скидки. Решать стоит по каждому товару: выдерживает ли он плановую цену с комиссией, логистикой и себестоимостью. Прикинуть остаток с продажи можно в <a href="/kalkulyator-marzhi/">калькуляторе маржи</a>.</p>
+
+  <div class="cta">
+    <h3 style="margin-top:0">Проверять это по каждому товару вручную — долго</h3>
+    <p>CARBID · Пульт продавца показывает товары, у которых расчётная маржа при текущей скидке ниже вашего порога, в том числе скидку, оставшуюся после автоакции, и предлагает наибольшую скидку, при которой маржа не ниже порога. Ставит её только по вашей кнопке. Будущую автоакцию программа не видит и исключать товары из неё не умеет — это делается в кабинете по шагам выше.</p>
+    <a class="btn" href="/pult/">Посмотреть программу</a>
+    <a class="btn ghost" href="/avtoakcii-wb/">Подробная инструкция</a>
+  </div>
+</main>
+
+<footer><div class="wrap">
+  <p><b style="color:var(--text)">Источники:</b> <a href="https://seller.wildberries.ru/instructions/ru/ru/material/how-to-set-minimal-price-and-block-auto-promotions" rel="noopener">WB: минимальная цена и блокировка</a> · <a href="https://seller.wildberries.ru/instructions/ru/ru/material/discount-depth-in-autopromotions" rel="noopener">WB: глубина скидки в автоакциях</a> · <a href="https://seller.wildberries.ru/instructions/ru/ru/material/how-to-add-all-suitable-products-to-an-autopromotion-with-one-button" rel="noopener">WB: «Добавить все подходящие»</a> · <a href="https://seller.wildberries.ru/instructions/ru/ru/material/promo-events-items-rank" rel="noopener">WB: акции и ранжирование</a>.</p>
+  <p>Ответ справочный: условия акций и интерфейс кабинета WB меняются — сверяйтесь с кабинетом и справкой WB.</p>
+  <p><b style="color:var(--text)">CARBID</b> — программы для продавцов и предприятий. Почта: <a href="mailto:carbidproduction@mail.ru">carbidproduction@mail.ru</a></p>
+</div></footer>
+<!-- Яндекс Метрика -->
+<script>
+(function (m, e, t, r, i, k, a) {
+  m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments); };
+  m[i].l = 1 * new Date();
+  k = e.createElement(t); a = e.getElementsByTagName(t)[0];
+  k.async = 1; k.src = r; a.parentNode.insertBefore(k, a);
+})(window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+ym(113673204, "init", { clickmap: true, trackLinks: true, accurateTrackBounce: true });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/113673204" style="position:absolute; left:-9999px;" alt=""></div></noscript>
+</body>
+</html>
